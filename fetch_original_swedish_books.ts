@@ -142,7 +142,7 @@ function getHasNextPage(doc: Document) {
 const LIMIT = 1000
 const LIBRARY = "GBG"
 // Returns all books from that year available in Gothenburg
-const BASE_URL = `https://libris.kb.se/hitlist?f=simp&q=år:YEAR&r=;tree:H;spr:swe;mat:(bok);ocode:(${LIBRARY})&m=${LIMIT}&s=b&d=libris&t=v&g=&p=PAGE`
+const BASE_URL = `https://libris.kb.se/hitlist?f=simp&q=år:YEAR&r=;tree:H;spr:swe;mat:(bok)&m=${LIMIT}&s=b&d=libris&t=v&g=&p=PAGE`
 
 async function loadData(year: number, page: number): Promise<string> {
   const fileName = `html/${year}-${page}.html`
