@@ -20,10 +20,15 @@ const filtered = [
 
 function getAuthorName(authorAndLifeDate: string): string {
   const lastComma = authorAndLifeDate.lastIndexOf(",")
-  if (lastComma === -1)
-    throw new Error(
-      "Expected author and life date text to contain at least one (,)"
-    )
+  if (lastComma === -1) {
+    const name = authorAndLifeDate.split("\n").at(0)?.trim()
+
+    if (name === undefined)
+      throw new Error(
+        "Expected author and life date text to contain at least one (,)"
+      )
+    else return name
+  }
 
   return authorAndLifeDate.substring(0, lastComma).trim()
 }
