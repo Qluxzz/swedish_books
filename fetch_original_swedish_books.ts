@@ -90,6 +90,8 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
           if (!authorAndLifeDate || !title || !type) return null
 
+          if (authorAndLifeDate.includes("[")) return null
+
           // This is a translated release, ignore
           if (originalTitle?.textContent.toLowerCase().includes("svenska"))
             return null
