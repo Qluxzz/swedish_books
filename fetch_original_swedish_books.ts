@@ -1,4 +1,4 @@
-import fetch from "node-fetch"
+import fetch, { Response } from "node-fetch"
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
 
@@ -82,7 +82,7 @@ function getIdsFromImageUrl(imageUrl: string): {
   return { bib, isbn }
 }
 
-async function findTitlesPublishedInYear(year: number) {
+async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
   let hasNextPage = true
   let page = 1
 
@@ -132,7 +132,7 @@ async function findTitlesPublishedInYear(year: number) {
           switch (items.length) {
             case 4:
             case 5:
-              return [title, author, lifeDate, ids.isbn]
+              return { title, author, lifeDate, isbn: ids.isbn }
 
             default:
               throw new Error("Unhandled number of info rows!")
@@ -203,6 +203,55 @@ async function loadData(year: number, page: number): Promise<string> {
   }
 }
 
+function raiseForStatusCode(resp: Response): void | never {
+  if (resp.status < 200 || resp.status >= 300)
+    throw new Error(
+      `Request to ${resp.url} was not successful. Returned ${resp.status} ${resp.statusText}`
+    )
+}
+
+interface GoodreadsData {
+  avgRating: string
+  ratingsCount: number
+  numPages: number
+}
+
+interface Release {
+  title: string
+  author: string
+  isbn?: string
+}
+
+interface FullRelease extends Required<Release> {
+  goodreads: GoodreadsData
+}
+
+async function getReleaseDataFromGoodReads(
+  isbn: string
+): Promise<GoodreadsData | null> {
+  const response = await fetch(
+    `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
+  )
+
+  raiseForStatusCode(response)
+
+  const json = (await response.json()) as GoodreadsData[]
+
+  if (json.length) return json[0]
+
+  return null
+}
+
+function* chunk<T>(arr: T[], n: number) {
+  for (let i = 0; i < arr.length; i += n) {
+    yield arr.slice(i, i + n)
+  }
+}
+
+function timeout(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 const STARTING_YEAR = 1850
 const END_YEAR = 2024
 
@@ -214,8 +263,36 @@ for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
 
     console.log(`Found ${data.length} releases`)
 
-    if (data.length !== 0)
-      await fs.writeFile(`json/${i}.json`, JSON.stringify(data, null, 2))
+    const result = []
+    const chunks = chunk(
+      data.map((x) => async () => {
+        if (!x.isbn) return x
+
+        const goodreads = await getReleaseDataFromGoodReads(x.isbn)
+        if (goodreads) return { ...x, goodreads }
+
+        return x
+      }),
+      10
+    )
+
+    for (const chunk of chunks) {
+      while (true) {
+        try {
+          const res = await Promise.all(chunk.map((f) => f()))
+          result.push(...res)
+          break
+        } catch {
+          console.info(
+            "Request failed, waiting for two seconds before trying again"
+          )
+          await timeout(2000)
+        }
+      }
+    }
+
+    if (result.length !== 0)
+      await fs.writeFile(`json/${i}.json`, JSON.stringify(result, null, 2))
   } catch (error) {
     console.log(`Failed to get releases for year ${i}`)
     throw error
