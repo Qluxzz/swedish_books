@@ -11,8 +11,11 @@ const filtered = [
   "Läromedel",
   "svensk tolkning",
   "lyrik",
+  ": dikter",
+  ": dikt",
   "till svenska",
   "övers.",
+  "från engelskan",
 ]
 
 function getAuthorName(authorAndLifeDate: string): string {
