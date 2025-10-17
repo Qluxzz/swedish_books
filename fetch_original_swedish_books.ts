@@ -265,6 +265,6 @@ for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
     if (result.length !== 0)
       await fs.writeFile(`json/${i}.json`, JSON.stringify(result, null, 2))
   } catch (error) {
-    console.log(`Failed to get releases for year ${i}`)
+    console.log(`Failed to get releases for year ${i}. ${error}`)
   }
 }
