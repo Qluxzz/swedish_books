@@ -15,11 +15,14 @@ const filtered = [
   "övers.",
 ]
 
-function formatAuthor(element: Element): string {
-  const text = element.textContent
+function getAuthorName(authorAndLifeDate: string): string {
+  const lastComma = authorAndLifeDate.lastIndexOf(",")
+  if (lastComma === -1)
+    throw new Error(
+      "Expected author and life date text to contain at least one (,)"
+    )
 
-  const lastComma = text.lastIndexOf(",")
-  return text.substring(0, lastComma).trim()
+  return authorAndLifeDate.substring(0, lastComma).trim()
 }
 
 const LIBRIS_ID = /libris-bib:([^,]+)/
@@ -93,11 +96,16 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
           const lastSlashInTitle = title.lastIndexOf("/")
           if (lastSlashInTitle !== -1)
-            title = title.substring(0, lastSlashInTitle).trim()
+            title = title.substring(0, lastSlashInTitle)
 
-          const [author, _lifeDate] = formatAuthor(items[0])
+          const author = getAuthorName(authorAndLifeDate)
 
-          return { title, author, isbn: ids.isbn }
+          return {
+            title: title.trim(),
+            author,
+            librisId: ids.bib,
+            isbn: ids.isbn,
+          }
         })
         .filter((x) => x !== null)
     )
@@ -174,6 +182,7 @@ interface GoodreadsData {
 interface Release {
   title: string
   author: string
+  librisId: string
   isbn?: string
 }
 
