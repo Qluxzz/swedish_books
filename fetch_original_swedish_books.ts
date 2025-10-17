@@ -1,69 +1,25 @@
-import fetch, { Response } from "node-fetch"
+import fetch from "node-fetch"
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
-
-const LIFE_DATE = /(\d{4})-(\d{4})?/
-
-function authorWasAliveWhenBookWasPublished(year: number, row: HTMLElement) {
-  const res = LIFE_DATE.exec(row.textContent)
-  // Ignore authors without age
-  if (!res) return false
-
-  const [_, birth, death] = res
-
-  if (!death && Number.parseInt(birth) - year < 100) return true
-
-  return Number.parseInt(death) > year
-}
+import { chunk, ensureSuccessStatusCode, timeout } from "./helpers.js"
 
 const filtered = [
-  "Barn/ungdom",
   "översättning",
   "översatt",
   "återberättad",
   "tolkad",
   "Läromedel",
   "svensk tolkning",
-  "Lyrik",
+  "lyrik",
   "till svenska",
   "övers.",
 ]
 
-function isValidRow(row: Element): boolean {
-  const items = row.querySelectorAll("td:nth-child(3) li")
-
-  // Ignore rows which doesn't have enough info to judge them by
-  if (!(items.length === 4 || items.length === 5)) return false
-
-  let [author, originalTitle, title, type] = [
-    items.item(0)?.textContent,
-    items.length === 5 ? items.item(1) : null,
-    items.item(items.length === 4 ? 1 : 2)?.textContent.toLowerCase(),
-    items.item(items.length === 4 ? 3 : 4)?.textContent.toLowerCase(),
-  ]
-
-  if (!author || !title || !type) return false
-
-  // This is a translated title, ignore
-  if (originalTitle?.textContent.toLowerCase().includes("svenska")) return false
-
-  if (type.includes("barn/ungdom")) return false
-
-  if (filtered.some((f) => title?.includes(f))) return false
-
-  if (!LIFE_DATE.test(author)) return false
-
-  return true
-}
-
-function formatAuthor(element: Element): [string, string?] {
+function formatAuthor(element: Element): string {
   const text = element.textContent
 
   const lastComma = text.lastIndexOf(",")
-  const name = text.substring(0, lastComma)
-  const lifeDate = LIFE_DATE.exec(text.substring(lastComma))?.[0]
-
-  return [name, lifeDate]
+  return text.substring(0, lastComma).trim()
 }
 
 const LIBRIS_ID = /libris-bib:([^,]+)/
@@ -86,7 +42,7 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
   let hasNextPage = true
   let page = 1
 
-  const results = []
+  const results: Release[] = []
   while (hasNextPage) {
     const html = await loadData(year, page)
 
@@ -106,38 +62,44 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
     results.push(
       ...Array.from(document.querySelectorAll(".trafftabell tr"))
-        .filter((row) => isValidRow(row))
         .map((row) => {
+          const items = row.querySelectorAll("td:nth-child(3) li")
+
+          // Ignore rows which doesn't have enough info to judge them by
+          if (!(items.length === 4 || items.length === 5)) return null
+
+          let [authorAndLifeDate, originalTitle, title, type] = [
+            items.item(0)?.textContent,
+            items.length === 5 ? items.item(1) : null,
+            items.item(items.length === 4 ? 1 : 2)?.textContent,
+            items.item(items.length === 4 ? 3 : 4)?.textContent.toLowerCase(),
+          ]
+
+          if (!authorAndLifeDate || !title || !type) return null
+
+          // This is a translated release, ignore
+          if (originalTitle?.textContent.toLowerCase().includes("svenska"))
+            return null
+
+          if (type.includes("barn/ungdom")) return null
+
+          if (filtered.some((f) => title?.includes(f))) return null
+
           const pictureUrl =
             row.querySelector("td.cover img")?.getAttribute("src") ??
             throwError("Failed to get image url!")
 
           const ids = getIdsFromImageUrl(pictureUrl)
 
-          const info =
-            row.querySelector("td:nth-child(3)") ??
-            throwError("Failed to get info for book!")
+          const lastSlashInTitle = title.lastIndexOf("/")
+          if (lastSlashInTitle !== -1)
+            title = title.substring(0, lastSlashInTitle).trim()
 
-          const items = info.querySelectorAll("li")
-          let title = info.querySelector("a")?.textContent
+          const [author, _lifeDate] = formatAuthor(items[0])
 
-          if (title) {
-            const lastSlashInTitle = title.lastIndexOf("/")
-            if (lastSlashInTitle !== -1)
-              title = title.substring(0, lastSlashInTitle).trim()
-          }
-
-          const [author, lifeDate] = formatAuthor(items[0])
-
-          switch (items.length) {
-            case 4:
-            case 5:
-              return { title, author, lifeDate, isbn: ids.isbn }
-
-            default:
-              throw new Error("Unhandled number of info rows!")
-          }
+          return { title, author, isbn: ids.isbn }
         })
+        .filter((x) => x !== null)
     )
 
     page++
@@ -203,13 +165,6 @@ async function loadData(year: number, page: number): Promise<string> {
   }
 }
 
-function raiseForStatusCode(resp: Response): void | never {
-  if (resp.status < 200 || resp.status >= 300)
-    throw new Error(
-      `Request to ${resp.url} was not successful. Returned ${resp.status} ${resp.statusText}`
-    )
-}
-
 interface GoodreadsData {
   avgRating: string
   ratingsCount: number
@@ -233,23 +188,13 @@ async function getReleaseDataFromGoodReads(
     `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
   )
 
-  raiseForStatusCode(response)
+  ensureSuccessStatusCode(response)
 
   const json = (await response.json()) as GoodreadsData[]
 
   if (json.length) return json[0]
 
   return null
-}
-
-function* chunk<T>(arr: T[], n: number) {
-  for (let i = 0; i < arr.length; i += n) {
-    yield arr.slice(i, i + n)
-  }
-}
-
-function timeout(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 const STARTING_YEAR = 1850
@@ -263,7 +208,7 @@ for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
 
     console.log(`Found ${data.length} releases`)
 
-    const result = []
+    const result: (FullRelease | Release)[] = []
     const chunks = chunk(
       data.map((x) => async () => {
         if (!x.isbn) return x
@@ -295,6 +240,5 @@ for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
       await fs.writeFile(`json/${i}.json`, JSON.stringify(result, null, 2))
   } catch (error) {
     console.log(`Failed to get releases for year ${i}`)
-    throw error
   }
 }
