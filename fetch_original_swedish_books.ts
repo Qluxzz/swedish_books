@@ -71,12 +71,14 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
           // Ignore rows which doesn't have enough info to judge them by
           if (!(items.length === 4 || items.length === 5)) return null
 
-          let [authorAndLifeDate, originalTitle, title, type] = [
-            items.item(0)?.textContent,
-            items.length === 5 ? items.item(1) : null,
-            items.item(items.length === 4 ? 1 : 2)?.textContent,
-            items.item(items.length === 4 ? 3 : 4)?.textContent.toLowerCase(),
-          ]
+          let { authorAndLifeDate, originalTitle, title, type } = {
+            authorAndLifeDate: items.item(0)?.textContent,
+            originalTitle: items.length === 5 ? items.item(1) : null,
+            title: items.item(items.length === 4 ? 1 : 2)?.textContent,
+            type: items
+              .item(items.length === 4 ? 3 : 4)
+              ?.textContent.toLowerCase(),
+          }
 
           if (!authorAndLifeDate || !title || !type) return null
 
