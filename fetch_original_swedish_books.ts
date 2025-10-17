@@ -162,10 +162,7 @@ async function loadData(year: number, page: number): Promise<string> {
 
     const resp = await fetch(url)
 
-    if (resp.status !== 200)
-      throw new Error(
-        `Request was not successful! Status code was ${resp.status}`
-      )
+    ensureSuccessStatusCode(resp)
 
     const html = await resp.text()
 
