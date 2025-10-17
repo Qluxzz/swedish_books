@@ -195,17 +195,25 @@ interface FullRelease extends Required<Release> {
 async function getReleaseDataFromGoodReads(
   isbn: string
 ): Promise<GoodreadsData | null> {
-  const response = await fetch(
-    `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
-  )
+  try {
+    const local = await fs.readFile(`goodreads/${isbn}.json`)
+    return JSON.parse(local.toString())
+  } catch {
+    const response = await fetch(
+      `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
+    )
 
-  ensureSuccessStatusCode(response)
+    ensureSuccessStatusCode(response)
 
-  const json = (await response.json()) as GoodreadsData[]
+    const json = (await response.json()) as GoodreadsData[]
 
-  if (json.length) return json[0]
+    const first = json.at(0)
+    if (!first) return null
 
-  return null
+    await fs.writeFile(`goodreads/${isbn}.json`, JSON.stringify(first))
+
+    return first
+  }
 }
 
 const STARTING_YEAR = 1850
