@@ -1,7 +1,6 @@
-import fetch from "node-fetch"
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
-import { chunk, ensureSuccessStatusCode, timeout } from "./helpers.js"
+import { chunk, getFileOrDownload, timeout } from "./helpers.js"
 
 const filtered = [
   "översättning",
@@ -49,25 +48,31 @@ function getIdsFromImageUrl(imageUrl: string): {
   return { bib, isbn }
 }
 
+function noResultsFound(document: Document): boolean {
+  return (
+    document.querySelector("h2.alert")?.textContent ===
+    "Denna avgränsning gav inga träffar"
+  )
+}
+
 async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
   let hasNextPage = true
   let page = 1
 
   const results: Release[] = []
   while (hasNextPage) {
-    const html = await loadData(year, page)
+    const html = await loadLibrisSearchResults(year, page)
 
     const { document } = new JSDOM(html).window
 
     if (document.querySelector("div#fullpost"))
-      // Only a single result was returned
+      // Only a single result was returned,
+      // which instead of returning a search results page,
+      // returns the info page for that single result directly
+      // We don't currently handle the parsing for this
       return []
 
-    if (
-      document.querySelector("h2.alert")?.textContent ===
-      "Denna avgränsning gav inga träffar"
-    )
-      return []
+    if (noResultsFound(document)) return []
 
     hasNextPage = getHasNextPage(document)
 
@@ -81,7 +86,10 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
           let { authorAndLifeDate, originalTitle, title, type } = {
             authorAndLifeDate: items.item(0)?.textContent,
-            originalTitle: items.length === 5 ? items.item(1) : null,
+            originalTitle:
+              items.length === 5
+                ? items.item(1)?.textContent.toLowerCase()
+                : null,
             title: items.item(items.length === 4 ? 1 : 2)?.textContent,
             type: items
               .item(items.length === 4 ? 3 : 4)
@@ -90,11 +98,11 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
           if (!authorAndLifeDate || !title || !type) return null
 
+          // Some rows have the title as the first item data, and no author info
           if (authorAndLifeDate.includes("[")) return null
 
           // This is a translated release, ignore
-          if (originalTitle?.textContent.toLowerCase().includes("svenska"))
-            return null
+          if (originalTitle?.includes("svenska")) return null
 
           if (type.includes("barn/ungdom")) return null
 
@@ -152,34 +160,19 @@ function getHasNextPage(doc: Document) {
 const LIMIT = 1000
 const LIBRARY = "GBG"
 // Returns all books from that year available in Gothenburg
-const BASE_URL = `https://libris.kb.se/hitlist?f=simp&q=år:YEAR&r=;tree:H;spr:swe;mat:(bok)&m=${LIMIT}&s=b&d=libris&t=v&g=&p=PAGE`
+const BASE_URL = `https://libris.kb.se/hitlist?f=simp&q=TREE:Hc&r=;tree:Hc;sab:Hc;spr:swe;mat:(bok);srt2:YEAR&m=${LIMIT}&s=b&d=libris&t=v&g=&p=PAGE`
 
-async function loadData(year: number, page: number): Promise<string> {
+async function loadLibrisSearchResults(
+  year: number,
+  page: number
+): Promise<string> {
   const fileName = `html/${year}-${page}.html`
+  const url = BASE_URL.replace("YEAR", year.toString()).replace(
+    "PAGE",
+    page.toString()
+  )
 
-  try {
-    const disk = await fs.readFile(fileName)
-    console.info(`Using cached file for year ${year} page ${page}`)
-    return disk.toString()
-  } catch {
-    console.info("Failed to get cached file, downloading from libris")
-    const url = BASE_URL.replace("YEAR", year.toString()).replace(
-      "PAGE",
-      page.toString()
-    )
-
-    console.info(url)
-
-    const resp = await fetch(url)
-
-    ensureSuccessStatusCode(resp)
-
-    const html = await resp.text()
-
-    await fs.writeFile(fileName, html)
-
-    return html
-  }
+  return await getFileOrDownload(fileName, url)
 }
 
 interface GoodreadsData {
@@ -202,25 +195,17 @@ interface FullRelease extends Required<Release> {
 async function getReleaseDataFromGoodReads(
   isbn: string
 ): Promise<GoodreadsData | null> {
-  try {
-    const local = await fs.readFile(`goodreads/${isbn}.json`)
-    return JSON.parse(local.toString())
-  } catch {
-    const response = await fetch(
-      `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
-    )
+  const fileName = `goodreads/${isbn}.json`
+  const url = `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
 
-    ensureSuccessStatusCode(response)
+  const data = await getFileOrDownload(fileName, url)
 
-    const json = (await response.json()) as GoodreadsData[]
+  const json: GoodreadsData[] = JSON.parse(data)
 
-    const first = json.at(0)
-    if (!first) return null
+  const first = json.at(0)
+  if (!first) return null
 
-    await fs.writeFile(`goodreads/${isbn}.json`, JSON.stringify(first))
-
-    return first
-  }
+  return first
 }
 
 const STARTING_YEAR = 1850
