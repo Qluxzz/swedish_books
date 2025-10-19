@@ -200,12 +200,7 @@ async function getReleaseDataFromGoodReads(
 
   const data = await getFileOrDownload(fileName, url)
 
-  const json: GoodreadsData[] = JSON.parse(data)
-
-  const first = json.at(0)
-  if (!first) return null
-
-  return first
+  return (JSON.parse(data) as GoodreadsData[]).at(0) ?? null
 }
 
 const STARTING_YEAR = 1850
