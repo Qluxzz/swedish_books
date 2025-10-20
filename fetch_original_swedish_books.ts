@@ -2,20 +2,19 @@ import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
 import { chunk, getFileOrDownload, timeout } from "./helpers.js"
 
-const filtered = [
+const translated = [
   "översättning",
   "översatt",
   "återberättad",
   "tolkad",
-  "Läromedel",
   "svensk tolkning",
-  "lyrik",
-  ": dikter",
-  ": dikt",
   "till svenska",
   "övers.",
+  "öfversättning",
   "från engelskan",
 ]
+
+const ignored = ["Läromedel", "lyrik", ": dikter", ": dikt"]
 
 function getAuthorName(authorAndLifeDate: string): string {
   const lastComma = authorAndLifeDate.lastIndexOf(",")
@@ -106,7 +105,9 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
           if (type.includes("barn/ungdom")) return null
 
-          if (filtered.some((f) => title?.includes(f))) return null
+          if (translated.some((f) => title?.includes(f))) return null
+
+          if (ignored.some((f) => title?.includes(f))) return null
 
           const pictureUrl =
             row.querySelector("td.cover img")?.getAttribute("src") ??
