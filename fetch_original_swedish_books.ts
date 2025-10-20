@@ -160,8 +160,7 @@ function getHasNextPage(doc: Document) {
 
 const LIMIT = 1000
 const LIBRARY = "GBG"
-// Returns all books from that year available in Gothenburg
-const BASE_URL = `https://libris.kb.se/hitlist?f=simp&q=TREE:Hc&r=;tree:Hc;sab:Hc;spr:swe;mat:(bok);srt2:YEAR&m=${LIMIT}&s=b&d=libris&t=v&g=&p=PAGE`
+const BASE_URL = `https://libris.kb.se/hitlist?f=simp&q=TREE:Hc&r=;tree:Hc;spr:swe;mat:(bok);srt2:YEAR&m=${LIMIT}&s=b&d=libris&t=v&g=&p=PAGE`
 
 async function loadLibrisSearchResults(
   year: number,
