@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
-import { chunk, getFileOrDownload, timeout } from "./helpers.js"
+import { attemptWithTimeout, chunk, getFileOrDownload } from "./helpers.js"
 
 const translated = [
   "översättning",
@@ -203,48 +203,51 @@ async function getReleaseDataFromGoodReads(
   return (JSON.parse(data) as GoodreadsData[]).at(0) ?? null
 }
 
+async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
+  const result: (FullRelease | Release)[] = []
+  const chunks = chunk(
+    titles.map((x) => async () => {
+      if (!x.isbn) return x
+
+      const goodreads = await getReleaseDataFromGoodReads(x.isbn)
+      if (goodreads) return { ...x, goodreads }
+
+      return x
+    }),
+    10
+  )
+
+  for (const chunk of chunks) {
+    const res = await attemptWithTimeout(() =>
+      Promise.all(chunk.map((f) => f()))
+    )
+
+    result.push(...res)
+  }
+
+  return result
+}
+
+function hasGoodReadsData(items: (FullRelease | Release)[]) {
+  return items.reduce((acc, x) => acc + ("goodreads" in x ? 1 : 0), 0)
+}
+
 const STARTING_YEAR = 1850
 const END_YEAR = 2024
 
 for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
   console.log(`Fetching releases for year ${i}`)
 
-  try {
-    const data = await findTitlesPublishedInYear(i)
+  const result = await enhanceReleaseWithDataFromGoodReads(
+    await findTitlesPublishedInYear(i)
+  )
 
-    console.log(`Found ${data.length} releases`)
+  console.log(
+    `Found ${result.length} releases, of which ${hasGoodReadsData(
+      result
+    )} releases were found on Goodread`
+  )
 
-    const result: (FullRelease | Release)[] = []
-    const chunks = chunk(
-      data.map((x) => async () => {
-        if (!x.isbn) return x
-
-        const goodreads = await getReleaseDataFromGoodReads(x.isbn)
-        if (goodreads) return { ...x, goodreads }
-
-        return x
-      }),
-      10
-    )
-
-    for (const chunk of chunks) {
-      while (true) {
-        try {
-          const res = await Promise.all(chunk.map((f) => f()))
-          result.push(...res)
-          break
-        } catch {
-          console.info(
-            "Request failed, waiting for two seconds before trying again"
-          )
-          await timeout(2000)
-        }
-      }
-    }
-
-    if (result.length !== 0)
-      await fs.writeFile(`json/${i}.json`, JSON.stringify(result, null, 2))
-  } catch (error) {
-    console.log(`Failed to get releases for year ${i}. ${error}`)
-  }
+  if (result.length !== 0)
+    await fs.writeFile(`json/${i}.json`, JSON.stringify(result, null, 2))
 }
