@@ -6,12 +6,13 @@
 import { readFile, writeFile } from "fs/promises"
 import goodreads, { Goodreads } from "./goodreads.ts"
 import { attemptWithTimeout, chunk, getFileOrDownload } from "./helpers.js"
+import pLimit from "p-limit"
 
 interface Release {
   title: string
   author: string
   isbn?: string
-  genres: string[]
+  genres: Set<string>
 }
 
 interface FullRelease extends Required<Release> {
@@ -45,7 +46,8 @@ async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
 
 const FORMAT = "application/sparql-results+json"
 
-const BASE_URL = "https://libris.kb.se/sparql?format=FORMAT&query=QUERY"
+const BASE_URL =
+  "https://libris.kb.se/sparql?format=FORMAT&should-sponge=soft&query=QUERY"
 const QUERY = (await readFile("./query.rq")).toString()
 
 async function loadLibrisSPARQLSearchResults(year: number): Promise<string> {
@@ -93,52 +95,10 @@ export enum Type {
   URI = "uri",
 }
 
-const invalidGenres = new Set<string>([
-  "https://id.kb.se/marc/Bibliography",
-  "https://id.kb.se/marc/Catalog",
-  "https://id.kb.se/marc/Dictionary",
-  "https://id.kb.se/marc/Essay",
-  "https://id.kb.se/marc/FederalNational",
-  "https://id.kb.se/marc/Festschrift",
-  "https://id.kb.se/marc/GovernmentPublicationLevelUndetermined",
-  "https://id.kb.se/marc/Handbook",
-  "https://id.kb.se/marc/Index",
-  "https://id.kb.se/marc/MixedForms",
-  "https://id.kb.se/marc/NotFictionNotFurtherSpecified",
+const invalidGenres = new Set([
   "https://id.kb.se/marc/Poetry",
-  "https://id.kb.se/marc/ShortStory",
-  "https://id.kb.se/marc/Thesis",
-  "https://id.kb.se/marc/Treaty",
-  "https://id.kb.se/term/barngf/Barn-%20och%20ungdomslitteratur",
-  "https://id.kb.se/term/barngf/Visor",
-  "https://id.kb.se/term/saogf/Analys%20och%20tolkning",
-  "https://id.kb.se/term/saogf/Arbetarskildringar",
-  "https://id.kb.se/term/saogf/Bibliografier",
-  "https://id.kb.se/term/saogf/Bibliografiska%20tidskrifter",
-  "https://id.kb.se/term/saogf/Biografier",
-  "https://id.kb.se/term/saogf/Biografiska%20skildringar",
-  "https://id.kb.se/term/saogf/Brev",
-  "https://id.kb.se/term/saogf/Dagb%C3%B6cker",
-  "https://id.kb.se/term/saogf/Ess%C3%A4er",
-  "https://id.kb.se/term/saogf/F%C3%B6rordningar",
-  "https://id.kb.se/term/saogf/F%C3%B6rteckningar",
-  "https://id.kb.se/term/saogf/Festskrifter",
-  "https://id.kb.se/term/saogf/Folklustspel",
-  "https://id.kb.se/term/saogf/Fotografier",
-  "https://id.kb.se/term/saogf/Guideb%C3%B6cker",
-  "https://id.kb.se/term/saogf/Handb%C3%B6cker%2C%20manualer%20etc.",
-  "https://id.kb.se/term/saogf/Kokb%C3%B6cker",
-  "https://id.kb.se/term/saogf/Konferenser",
-  "https://id.kb.se/term/saogf/L%C3%A4romedel",
-  "https://id.kb.se/term/saogf/Lexikon",
-  "https://id.kb.se/term/saogf/M%C3%B6nster",
-  "https://id.kb.se/term/saogf/Matriklar",
   "https://id.kb.se/term/saogf/Poesi",
-  "https://id.kb.se/term/saogf/Problemsamlingar",
-  "https://id.kb.se/term/saogf/R%C3%A4ttsfall",
-  "https://id.kb.se/term/saogf/Recensioner",
-  "https://id.kb.se/term/saogf/Utst%C3%A4llningskataloger",
-  "https://id.kb.se/term/saogf/Visor%20%28musik%29",
+  "https://id.kb.se/marc/NotFictionNotFurtherSpecified",
 ])
 
 async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
@@ -146,46 +106,54 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
   const parse = JSON.parse(data) as SparqlResponse
 
   // We get one row per genre of the work
-  return Object.values(
-    parse.results.bindings.reduce(
-      (acc, x) => {
-        const { invalid, valid } = acc
+  return (
+    parse.results.bindings
+      .reduce<{ invalid: Set<string>; valid: Map<string, Release> }>(
+        (acc, x) => {
+          const { invalid, valid } = acc
 
-        if (invalid.has(x.work.value)) return acc
+          if (invalid.has(x.work.value)) return acc
 
-        if (invalidGenres.has(x.gf.value)) {
-          invalid.add(x.work.value)
-          // Since we get one row per genre we might have added a previous instance
-          // before we know it was invalid, so we remove it
-          delete valid[x.work.value]
+          // Ignore works without a valid reference
+          if (x.work.type === Type.Bnode) {
+            invalid.add(x.work.value)
+            return acc
+          }
+
+          if (invalidGenres.has(x.gf.value)) {
+            invalid.add(x.work.value)
+            // Since we get one row per genre we might have added a previous instance
+            // before we know it was invalid, so we remove it
+            valid.delete(x.work.value)
+
+            return acc
+          }
+
+          const existing = valid.get(x.work.value)
+          if (existing) existing.genres.add(x.gf.value)
+          else
+            valid.set(x.work.value, {
+              title: x.title.value,
+              author: `${x.givenName.value} ${x.familyName.value}`,
+              genres: new Set<string>([x.gf.value]),
+              isbn: x.isbn?.value,
+            })
 
           return acc
-        }
-
-        if (x.work.value in valid) {
-          const existing = valid[x.work.value]
-
-          valid[x.work.value] = {
-            ...existing,
-            genres: [...existing.genres, x.gf.value],
-          }
-        } else {
-          valid[x.work.value] = {
-            title: x.title.value,
-            author: `${x.givenName.value} ${x.familyName.value}`,
-            genres: [x.gf.value],
-            isbn: x.isbn?.value,
-          }
-        }
-
-        return acc
-      },
-      { invalid: new Set<string>(), valid: {} } as {
-        invalid: Set<string>
-        valid: Record<string, Release>
-      }
-    ).valid
+        },
+        { invalid: new Set<string>(), valid: new Map() }
+      )
+      .valid.values()
+      // Ignore any title that only has a single genre of some node id
+      .filter((x) => [...x.genres].some((g) => !g.startsWith("nodeID://b")))
+      .toArray()
   )
+}
+
+function makeSetsSerializable(_: string, value: any) {
+  // Sets can not be stringified by default, so we need to convert it to a regular array first
+  if (value instanceof Set) return [...value]
+  return value
 }
 
 function hasGoodReadsData(items: object[]) {
@@ -195,19 +163,32 @@ function hasGoodReadsData(items: object[]) {
 const STARTING_YEAR = 1850
 const END_YEAR = 2024
 
-for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
-  console.log(`Fetching releases for year ${i}`)
+// The SPARQL endpoint takes around 30 seconds for each response,
+// so we start 20 requests in parallel
+const limit = pLimit(20)
 
-  const result = await enhanceReleaseWithDataFromGoodReads(
-    await findTitlesPublishedInYear(i)
-  )
+const tasks = [...Array(END_YEAR - STARTING_YEAR)].map((_, i) =>
+  limit(async function () {
+    const year = STARTING_YEAR + i
 
-  console.log(
-    `Found ${result.length} releases, of which ${hasGoodReadsData(
-      result
-    )} releases were found on Goodread`
-  )
+    console.log(`Fetching releases for year ${year}`)
+    const result = await findTitlesPublishedInYear(year)
+    const enhanced = await enhanceReleaseWithDataFromGoodReads(result)
 
-  if (result.length !== 0)
-    await writeFile(`json/${i}.json`, JSON.stringify(result, null, 2))
-}
+    console.log(
+      `Found ${enhanced.length} releases, of which ${hasGoodReadsData(
+        enhanced
+      )} releases were found on Goodread`
+    )
+
+    if (enhanced.length !== 0)
+      await writeFile(
+        `json/${year}.json`,
+        JSON.stringify(enhanced, makeSetsSerializable, 2)
+      )
+  })
+)
+
+await Promise.all(tasks)
+
+console.info("Done!")

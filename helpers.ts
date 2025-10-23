@@ -34,13 +34,15 @@ async function getFileOrDownload(
 ): Promise<string> {
   try {
     const disk = await fs.readFile(fileName)
-    console.info(`Using cached file ${fileName} for ${url}`)
+    console.info(`Using cached file ${fileName}`)
     return disk.toString()
   } catch {
-    console.info(`Cached file ${fileName} for ${url} not found, downloading!`)
+    console.info(`Cached file ${fileName} not found, downloading!`)
   }
 
+  console.time(url)
   const resp = await fetch(url)
+  console.timeEnd(url)
 
   ensureSuccessStatusCode(resp)
 
@@ -70,7 +72,6 @@ async function attemptWithTimeout<T>(
     } catch (error) {
       if (currentAttempt === attempts) throw error
 
-      console.info(error)
       await waitMs(timeoutMs * currentAttempt)
     }
   } while (++currentAttempt <= attempts)

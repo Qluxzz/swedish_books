@@ -44,12 +44,23 @@ async function getByTitleAndAuthor(
 ): Promise<Goodreads | null> {
   const slug = slugify.default(`${title}-${author}`)
 
-  const fileName = `goodreads/${slug}.json`
-  const url = `https://www.goodreads.com/book/auto_complete?format=json&q=${title} ${author}`
+  const search = encodeURIComponent(`${title} ${author}`)
+
+  // A file name can't be longer than 255 bytes generally
+  const fileName = `goodreads/${slug.slice(0, 100)}.json`
+  const url = `https://www.goodreads.com/book/auto_complete?format=json&q=${search}`
 
   const data = await getFileOrDownload(fileName, url)
 
-  return (JSON.parse(data) as Goodreads[]).at(0) ?? null
+  const searchResult = JSON.parse(data) as Goodreads[]
+  if (searchResult.length === 0) return null
+
+  // Check that the search results include something with the same author or title
+  const matching = searchResult.find(
+    (x) => x.author.name === author || x.title === title
+  )
+
+  return matching ?? null
 }
 
 const goodreads = {
