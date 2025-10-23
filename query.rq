@@ -1,0 +1,35 @@
+PREFIX : <https://id.kb.se/vocab/>
+PREFIX marc: <https://id.kb.se/marc/>
+PREFIX lge: <https://id.kb.se/language/>
+
+SELECT DISTINCT ?work ?instance ?title ?givenName ?familyName ?isbn ?gf {
+  ?instance a ?type ;
+            :instanceOf ?work ;
+            :hasTitle [ :mainTitle ?title ] ;
+            :publication [ :year ?year ] .
+  
+  FILTER(?type IN (:Instance, :Print))
+  FILTER(STR(?year) = "|YEAR|")
+
+  ?work a ?workType ;
+        :language lge:swe ;
+        :genreForm ?gf ;
+        :contribution [ a :PrimaryContribution ; :agent [ :givenName ?givenName ; :familyName ?familyName ] ] .
+
+  FILTER(?workType IN (:Text, :Work, :TextualWork))
+
+  OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
+
+  FILTER NOT EXISTS { ?work :translationOf [] }
+  FILTER NOT EXISTS { ?work :intendedAudience marc:Juvenile }
+}
+
+# 510378 in total
+# With author: 1367631
+    # With instance of :Monograph: 1127611
+    # With title: 79766
+    # With year: 76479
+    # With ISBN: 49507
+# With no author: 3226491 Looks okay, there's more than just books in the db
+
+
