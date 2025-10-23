@@ -34,15 +34,15 @@ async function getFileOrDownload(
 ): Promise<string> {
   try {
     const disk = await fs.readFile(fileName)
-    console.info(`Using cached file ${fileName}`)
+    // console.info(`Using cached file ${fileName}`)
     return disk.toString()
   } catch {
-    console.info(`Cached file ${fileName} not found, downloading!`)
+    // console.info(`Cached file ${fileName} not found, downloading!`)
   }
 
-  console.time(url)
+  // console.time(url)
   const resp = await fetch(url)
-  console.timeEnd(url)
+  // console.timeEnd(url)
 
   ensureSuccessStatusCode(resp)
 
