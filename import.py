@@ -1,14 +1,35 @@
 import sqlite3
 import os
+from pathlib import Path
 import json
 
 
 def main():
+    if Path("./books2.db").is_file():
+        os.remove("./books2.db")
+
     conn = sqlite3.connect("books2.db")
     conn.execute(
         """
+CREATE TABLE IF NOT EXISTS genres (
+    id INTEGER PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+)
+"""
+    )
+    conn.execute(
+        """
+CREATE TABLE IF NOT EXISTS book_genre(
+    book_id INTEGER REFERENCES books(id),
+    genre_id INTEGER REFERENCES genres(id),
+    PRIMARY KEY(book_id, genre_id)
+)
+                 """
+    )
+    conn.execute(
+        """
 CREATE TABLE IF NOT EXISTS books (
-    id INTEGER INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
     author TEXT NOT NULL,
     year INTEGER NOT NULL,
@@ -33,14 +54,14 @@ CREATE TABLE IF NOT EXISTS books (
                     goodreads = book.get("goodreads", {})
 
                     # If title with same author already exist, keep the oldest release
-                    conn.execute(
+                    (book_id,) = conn.execute(
                         """
-INSERT INTO books(title, author, YEAR, isbn, pages, avgRating, ratings, imageId)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
-UPDATE
-SET YEAR = excluded.year
-WHERE excluded.year < books.year;
-""",
+                            INSERT INTO books(title, author, year, isbn, pages, avgRating, ratings, imageId)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
+                            UPDATE
+                            SET id=id, year=MIN(excluded.year, books.year)
+                            RETURNING id
+                        """,
                         (
                             book["title"],
                             book["author"],
@@ -51,7 +72,26 @@ WHERE excluded.year < books.year;
                             goodreads.get("ratingsCount", None),
                             get_image_id(book),
                         ),
-                    )
+                    ).fetchone()
+
+                    genre_ids: list[int] = []
+                    for genre in book["genres"]:
+                        (genre_id,) = conn.execute(
+                            "INSERT INTO genres (name) VALUES(?) ON CONFLICT DO UPDATE set id=id RETURNING id",
+                            (genre,),
+                        ).fetchone()
+                        if genre_id is not None:
+                            genre_ids.append(genre_id)
+
+                    for genre_id in genre_ids:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO book_genre (book_id, genre_id) VALUES (?, ?)",
+                            (
+                                book_id,
+                                genre_id,
+                            ),
+                        )
+
                 conn.commit()
     conn.close()
 
