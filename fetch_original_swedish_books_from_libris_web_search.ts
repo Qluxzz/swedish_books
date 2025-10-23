@@ -12,6 +12,7 @@
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
 import { attemptWithTimeout, chunk, getFileOrDownload } from "./helpers.js"
+import goodreads from "./goodreads.js"
 
 const translated = [
   "översättning",
@@ -203,25 +204,14 @@ interface FullRelease extends Required<Release> {
   goodreads: GoodreadsData
 }
 
-async function getReleaseDataFromGoodReads(
-  isbn: string
-): Promise<GoodreadsData | null> {
-  const fileName = `goodreads/${isbn}.json`
-  const url = `https://www.goodreads.com/book/auto_complete?format=json&q=${isbn}`
-
-  const data = await getFileOrDownload(fileName, url)
-
-  return (JSON.parse(data) as GoodreadsData[]).at(0) ?? null
-}
-
 async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
   const result: (FullRelease | Release)[] = []
   const chunks = chunk(
     titles.map((x) => async () => {
       if (!x.isbn) return x
 
-      const goodreads = await getReleaseDataFromGoodReads(x.isbn)
-      if (goodreads) return { ...x, goodreads }
+      const result = await goodreads.getByISBN(x.isbn)
+      if (result) return { ...x, goodreads: result }
 
       return x
     }),
@@ -239,7 +229,7 @@ async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
   return result
 }
 
-function hasGoodReadsData(items: (FullRelease | Release)[]) {
+function hasGoodReadsData(items: object[]) {
   return items.reduce((acc, x) => acc + ("goodreads" in x ? 1 : 0), 0)
 }
 
