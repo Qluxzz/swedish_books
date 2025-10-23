@@ -1,26 +1,26 @@
 /**
  * Fetches books from Libris using their SPARQL endpoint
- * If ISBN is available, tries to enhance data with data from goodreads
+ * Tries to enhance data with data from goodreads using the ISBN or a combination of title and author
  */
 
-import { readFile, writeFile } from "fs/promises"
+import { writeFile } from "fs/promises"
 import goodreads, { Goodreads } from "./goodreads.ts"
-import { attemptWithTimeout, chunk, getFileOrDownload } from "./helpers.js"
+import { attemptWithTimeout, chunk } from "./helpers.js"
 import pLimit from "p-limit"
+import { loadLibrisSPARQLSearchResults, Type } from "./sparql.ts"
 
-interface Release {
-  title: string
-  author: string
-  isbn?: string
-  genres: Set<string>
+function makeSetsSerializable(_: string, value: any) {
+  // Sets can not be stringified by default, so we need to convert it to a regular array first
+  if (value instanceof Set) return [...value]
+  return value
 }
 
-interface FullRelease extends Required<Release> {
-  goodreads: Goodreads
+function hasGoodReadsData(items: object[]) {
+  return items.reduce((acc, x) => acc + ("goodreads" in x ? 1 : 0), 0)
 }
 
 async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
-  const result: (FullRelease | Release)[] = []
+  const result: Release[] = []
   const chunks = chunk(
     titles.map((x) => async () => {
       const result = x.isbn
@@ -44,80 +44,19 @@ async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
   return result
 }
 
-const FORMAT = "application/sparql-results+json"
-
-const BASE_URL =
-  "https://libris.kb.se/sparql?format=FORMAT&should-sponge=soft&query=QUERY"
-const QUERY = (await readFile("./query.rq")).toString()
-
-async function loadLibrisSPARQLSearchResults(year: number): Promise<string> {
-  const fileName = `json-sparql/${year}.json`
-  const url = BASE_URL.replace("FORMAT", encodeURIComponent(FORMAT)).replace(
-    "QUERY",
-    encodeURIComponent(QUERY.replace("|YEAR|", year.toString()))
-  )
-
-  return await getFileOrDownload(fileName, url)
+interface Release {
+  title: string
+  author: string
+  isbn?: string
+  genres: Set<string>
+  goodreads?: Goodreads
 }
-
-export interface SparqlResponse {
-  head: Head
-  results: Results
-}
-
-export interface Head {
-  link: any[]
-  vars: string[]
-}
-
-export interface Results {
-  distinct: boolean
-  ordered: boolean
-  bindings: {
-    work: Value
-    instance: Value
-    title: Value
-    givenName: Value
-    familyName: Value
-    isbn?: Value
-    gf: Value
-  }[]
-}
-
-export interface Value {
-  type: Type
-  value: string
-}
-
-export enum Type {
-  Bnode = "bnode",
-  Literal = "literal",
-  URI = "uri",
-}
-
-const invalidGenres = new Set([
-  "https://id.kb.se/marc/ComicOrGraphicNovel",
-  "https://id.kb.se/marc/ComicStrip",
-  "https://id.kb.se/marc/Encyclopedia",
-  "https://id.kb.se/marc/Essay",
-  "https://id.kb.se/marc/NotFictionNotFurtherSpecified",
-  "https://id.kb.se/marc/Poetry",
-  "https://id.kb.se/marc/Yearbook",
-  "https://id.kb.se/term/gmgpc/swe/Tecknade%20serier",
-  "https://id.kb.se/term/saogf/Allegorier",
-  "https://id.kb.se/term/saogf/Bildverk",
-  "https://id.kb.se/term/saogf/Ljudb%C3%B6cker",
-  "https://id.kb.se/term/saogf/Ljudbearbetningar",
-  "https://id.kb.se/term/saogf/Poesi",
-  "https://id.kb.se/term/saogf/Tecknade%20serier",
-])
 
 async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
   const data = await loadLibrisSPARQLSearchResults(year)
-  const parse = JSON.parse(data) as SparqlResponse
 
   // We get one row per genre of the work
-  return parse.results.bindings
+  return data.results.bindings
     .reduce<{ invalid: Set<string>; valid: Map<string, Release> }>(
       (acc, x) => {
         const { invalid, valid } = acc
@@ -139,7 +78,7 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
           return acc
         }
 
-        if (invalidGenres.has(x.gf.value)) {
+        if (INVALID_GENRES.has(x.gf.value)) {
           invalid.add(x.work.value)
           // Since we get one row per genre we might have added a previous instance
           // before we know it was invalid, so we remove it
@@ -166,15 +105,22 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
     .toArray()
 }
 
-function makeSetsSerializable(_: string, value: any) {
-  // Sets can not be stringified by default, so we need to convert it to a regular array first
-  if (value instanceof Set) return [...value]
-  return value
-}
-
-function hasGoodReadsData(items: object[]) {
-  return items.reduce((acc, x) => acc + ("goodreads" in x ? 1 : 0), 0)
-}
+const INVALID_GENRES = new Set([
+  "https://id.kb.se/marc/ComicOrGraphicNovel",
+  "https://id.kb.se/marc/ComicStrip",
+  "https://id.kb.se/marc/Encyclopedia",
+  "https://id.kb.se/marc/Essay",
+  "https://id.kb.se/marc/NotFictionNotFurtherSpecified",
+  "https://id.kb.se/marc/Poetry",
+  "https://id.kb.se/marc/Yearbook",
+  "https://id.kb.se/term/gmgpc/swe/Tecknade%20serier",
+  "https://id.kb.se/term/saogf/Allegorier",
+  "https://id.kb.se/term/saogf/Bildverk",
+  "https://id.kb.se/term/saogf/Ljudb%C3%B6cker",
+  "https://id.kb.se/term/saogf/Ljudbearbetningar",
+  "https://id.kb.se/term/saogf/Poesi",
+  "https://id.kb.se/term/saogf/Tecknade%20serier",
+])
 
 const STARTING_YEAR = 1850
 const END_YEAR = 2024
