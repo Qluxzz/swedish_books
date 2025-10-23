@@ -1,3 +1,14 @@
+/**
+ * Fetches books from Libris web UI
+ * If ISBN is available, tries to enhance data with data from goodreads
+ *
+ * Why this doesn't work?
+ * Libris isn't strict enough in what it considers translated works,
+ * even though I have tried to filter only swedish original titles,
+ * we still get works by Tolstoy and american authors in the response,
+ * with no way to dicern these as translated.
+ */
+
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
 import { attemptWithTimeout, chunk, getFileOrDownload } from "./helpers.js"
