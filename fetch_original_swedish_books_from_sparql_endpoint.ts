@@ -112,6 +112,7 @@ const INVALID_GENRES = new Set([
   "https://id.kb.se/marc/Essay",
   "https://id.kb.se/marc/NotFictionNotFurtherSpecified",
   "https://id.kb.se/marc/Poetry",
+  "https://id.kb.se/marc/Thesis",
   "https://id.kb.se/marc/Yearbook",
   "https://id.kb.se/term/gmgpc/swe/Tecknade%20serier",
   "https://id.kb.se/term/saogf/Allegorier",

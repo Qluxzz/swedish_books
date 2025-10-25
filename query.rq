@@ -2,34 +2,28 @@ PREFIX : <https://id.kb.se/vocab/>
 PREFIX marc: <https://id.kb.se/marc/>
 PREFIX lge: <https://id.kb.se/language/>
 
-SELECT DISTINCT ?work ?instance ?title ?givenName ?familyName ?isbn ?gf {
+SELECT DISTINCT 
+  ?work ?instance ?title ?givenName ?familyName ?lifeSpan ?author ?isbn ?genre 
+{
   ?instance a ?type ;
-            :instanceOf ?work ;
-            :hasTitle [ :mainTitle ?title ] ;
-            :publication [ :year ?year ] .
-  
+    :instanceOf ?work ;
+    :hasTitle [ :mainTitle ?title ] ;
+    :publication [ :year ?year ] .
+  OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
+
   FILTER(?type IN (:Instance, :Print))
   FILTER(STR(?year) = "|YEAR|")
 
+  # Fetch the unique work that this instance is of
   ?work a ?workType ;
-        :language lge:swe ;
-        :genreForm ?gf ;
-        :contribution [ a :PrimaryContribution ; :agent [ :givenName ?givenName ; :familyName ?familyName ] ] .
-
+    :language lge:swe ;
+    :genreForm ?genre ;
+    :contribution [ a :PrimaryContribution ; :agent ?author ] .
   FILTER(?workType IN (:Text, :Work, :TextualWork))
-
-  OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
-
+  # Ignore translated works
   FILTER NOT EXISTS { ?work :translationOf [] }
-  FILTER NOT EXISTS { ?work :intendedAudience marc:Juvenile }
+
+  # Get author information
+  ?author :givenName ?givenName ; :familyName ?familyName
+  OPTIONAL { ?author :lifeSpan ?lifeSpan }
 }
-
-# 510378 in total
-# With author: 1367631
-    # With instance of :Monograph: 1127611
-    # With title: 79766
-    # With year: 76479
-    # With ISBN: 49507
-# With no author: 3226491 Looks okay, there's more than just books in the db
-
-
