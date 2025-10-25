@@ -55,9 +55,15 @@ async function getByTitleAndAuthor(
   const searchResult = JSON.parse(data) as Goodreads[]
   if (searchResult.length === 0) return null
 
+  const normalizedTitle = title.toLowerCase()
+  const normalizedAuthor = author.toLowerCase()
+
   // Check that the search results include something with the same author or title
   const matching = searchResult.find(
-    (x) => x.author.name === author || x.title === title
+    (x) =>
+      x.bookTitleBare.toLowerCase() === normalizedTitle ||
+      x.title.toLowerCase() === normalizedTitle ||
+      x.author.name.toLowerCase() === normalizedAuthor
   )
 
   return matching ?? null
