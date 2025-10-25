@@ -5,7 +5,7 @@
 
 import { writeFile } from "fs/promises"
 import goodreads, { Goodreads } from "./goodreads.ts"
-import { attemptWithTimeout, chunk } from "./helpers.js"
+import { attemptWithTimeout, chunk, throwError } from "./helpers.js"
 import pLimit from "p-limit"
 import { loadLibrisSPARQLSearchResults, Type } from "./sparql.ts"
 
@@ -88,7 +88,11 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
         else
           valid.set(x.work.value, {
             title: x.title.value,
-            authorId: x.authorId.value,
+            authorId:
+              x.author.value.split("/").pop()?.split("#").at(0) ??
+              throwError(
+                `${x.author.value} could not be converted to just an author id!`
+              ),
             author: `${x.givenName.value} ${x.familyName.value}`,
             lifeSpan: x.lifeSpan?.value,
             genres: new Set<string>([x.genre.value]),
@@ -124,9 +128,9 @@ const INVALID_GENRES = new Set([
 const STARTING_YEAR = 1850
 const END_YEAR = 2024
 
-// The SPARQL endpoint takes around 30 seconds for each response,
+// The SPARQL endpoint takes around 50 seconds for each response,
 // so we start 20 requests in parallel
-const limit = pLimit(20)
+const limit = pLimit(30)
 
 const tasks = [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) =>
   limit(async function () {

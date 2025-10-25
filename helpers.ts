@@ -79,4 +79,14 @@ async function attemptWithTimeout<T>(
   throw new Error("Unexpected, should have thrown error on last attempt")
 }
 
-export { chunk, ensureSuccessStatusCode, getFileOrDownload, attemptWithTimeout }
+function throwError(message: string): never {
+  throw Error(message)
+}
+
+export {
+  chunk,
+  ensureSuccessStatusCode,
+  getFileOrDownload,
+  attemptWithTimeout,
+  throwError,
+}
