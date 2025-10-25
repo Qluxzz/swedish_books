@@ -38,7 +38,7 @@ export interface Results {
     work: Value
     instance: Value
     title: Value
-    authorId: Value
+    author: Value
     givenName: Value
     familyName: Value
     lifeSpan?: Value
