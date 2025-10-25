@@ -107,6 +107,31 @@ function log(message?: any, ...optionalParams: any[]) {
   )
 }
 
+function isValidISBN(isbn: string): { result: boolean; normalized: string } {
+  const clean = isbn.replace(/[-\s]/g, "").toUpperCase()
+
+  if (/^\d{9}[\dX]$/.test(clean)) {
+    // ISBN-10 checksum
+    const sum = clean
+      .split("")
+      .reduce(
+        (acc, c, i) => acc + (c === "X" ? 10 : Number.parseInt(c)) * (10 - i),
+        0
+      )
+    return { result: sum % 11 === 0, normalized: clean }
+  }
+
+  if (/^\d{13}$/.test(clean)) {
+    // ISBN-13 checksum
+    const sum = clean
+      .split("")
+      .reduce((acc, c, i) => acc + Number.parseInt(c) * (i % 2 ? 3 : 1), 0)
+    return { result: sum % 10 === 0, normalized: clean }
+  }
+
+  return { result: false, normalized: clean }
+}
+
 export {
   chunk,
   ensureSuccessStatusCode,
@@ -114,4 +139,5 @@ export {
   attemptWithTimeout,
   throwError,
   log,
+  isValidISBN,
 }

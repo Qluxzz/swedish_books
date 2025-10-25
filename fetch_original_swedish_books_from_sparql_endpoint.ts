@@ -4,8 +4,8 @@
  */
 
 import { writeFile } from "fs/promises"
-import goodreads, { Goodreads } from "./goodreads.ts"
-import { attemptWithTimeout, chunk, log, throwError } from "./helpers.js"
+import { Goodreads, enhanceWithDataFromGoodReads } from "./goodreads.ts"
+import { isValidISBN, log, throwError } from "./helpers.js"
 import pLimit from "p-limit"
 import { loadLibrisSPARQLSearchResults, Type } from "./sparql.ts"
 
@@ -17,31 +17,6 @@ function makeSetsSerializable(_: string, value: any) {
 
 function hasGoodReadsData(items: object[]) {
   return items.reduce((acc, x) => acc + ("goodreads" in x ? 1 : 0), 0)
-}
-
-async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
-  const result: Release[] = []
-  const chunks = chunk(
-    titles.map((x) => async () => {
-      const result = x.isbn
-        ? await goodreads.getByISBN(x.isbn)
-        : await goodreads.getByTitleAndAuthor(x.title, x.author)
-      if (result) return { ...x, goodreads: result }
-
-      return x
-    }),
-    10
-  )
-
-  for (const chunk of chunks) {
-    const res = await attemptWithTimeout(() =>
-      Promise.all(chunk.map((f) => f()))
-    )
-
-    result.push(...res)
-  }
-
-  return result
 }
 
 interface Release {
@@ -71,6 +46,11 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
         // Ignore all children's books
         if (x.genre.value.startsWith("https://id.kb.se/term/barngf")) {
           invalid.add(x.work.value)
+
+          // Since we get one row per genre we might have added a previous instance
+          // before we know it was invalid, so we remove it
+          valid.delete(x.work.value)
+
           return acc
         }
 
@@ -85,7 +65,21 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
         const existing = valid.get(x.work.value)
         if (existing) existing.genres.add(x.genre.value)
-        else
+        else {
+          if (x.isbn?.value) {
+            const { result, normalized } = isValidISBN(x.isbn.value)
+
+            if (!result) {
+              // console.error(
+              //   `Book ${x.title.value} by ${x.givenName.value} ${x.familyName.value} had an invalid ISBN (${x.isbn.value}) `
+              // )
+
+              x.isbn = undefined
+            } else {
+              x.isbn.value = normalized
+            }
+          }
+
           valid.set(x.work.value, {
             title: x.title.value,
             authorId:
@@ -98,6 +92,7 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
             genres: new Set<string>([x.genre.value]),
             isbn: x.isbn?.value,
           })
+        }
 
         return acc
       },
@@ -114,6 +109,7 @@ const INVALID_GENRES = new Set([
   "https://id.kb.se/marc/Essay",
   "https://id.kb.se/marc/NotFictionNotFurtherSpecified",
   "https://id.kb.se/marc/Poetry",
+  "https://id.kb.se/marc/Review",
   "https://id.kb.se/marc/Thesis",
   "https://id.kb.se/marc/Yearbook",
   "https://id.kb.se/term/gmgpc/swe/Tecknade%20serier",
@@ -135,23 +131,28 @@ const limit = pLimit(30)
 const tasks = [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) =>
   limit(async function () {
     const year = STARTING_YEAR + i
+    try {
+      log(`${year}: Fetching titles`)
+      const result = await findTitlesPublishedInYear(year)
+      log(`${year}: Try to add Goodreads data`)
+      const enhanced = await enhanceWithDataFromGoodReads(result)
 
-    log(`${year}: Fetching titles`)
-    const result = await findTitlesPublishedInYear(year)
-    log(`${year}: Try to add Goodreads data`)
-    const enhanced = await enhanceReleaseWithDataFromGoodReads(result)
-
-    log(
-      `${year}: Found ${enhanced.length} releases, of which ${hasGoodReadsData(
-        enhanced
-      )} releases were found on Goodread`
-    )
-
-    if (enhanced.length !== 0)
-      await writeFile(
-        `json/${year}.json`,
-        JSON.stringify(enhanced, makeSetsSerializable, 2)
+      log(
+        `${year}: Found ${
+          enhanced.length
+        } releases, of which ${hasGoodReadsData(
+          enhanced
+        )} releases were found on Goodread`
       )
+
+      if (enhanced.length !== 0)
+        await writeFile(
+          `json/${year}.json`,
+          JSON.stringify(enhanced, makeSetsSerializable, 2)
+        )
+    } catch (error) {
+      log(`${year}: Failed to fetch releases for year. ${error}`)
+    }
   })
 )
 

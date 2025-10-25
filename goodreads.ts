@@ -1,3 +1,4 @@
+import pLimit from "p-limit"
 import { getFileOrDownload } from "./helpers.js"
 import slugify from "slugify"
 
@@ -69,9 +70,28 @@ async function getByTitleAndAuthor(
   return matching ?? null
 }
 
-const goodreads = {
-  getByISBN,
-  getByTitleAndAuthor,
+/**
+ * Fetch data from Goodreads using ISBN or a combination of title and author
+ * @param titles
+ * @returns title with field for goodreads data if found
+ */
+async function enhanceWithDataFromGoodReads<
+  T extends { isbn?: string; title: string; author: string }
+>(titles: T[]): Promise<(T & { goodreads?: Goodreads })[]> {
+  const limit = pLimit(1)
+
+  const tasks = titles.map((title) =>
+    limit(async () => {
+      const result = title.isbn
+        ? await getByISBN(title.isbn)
+        : await getByTitleAndAuthor(title.title, title.author)
+      if (result) return { ...title, goodreads: result }
+
+      return title
+    })
+  )
+
+  return await Promise.all(tasks)
 }
 
-export default goodreads
+export { enhanceWithDataFromGoodReads }
