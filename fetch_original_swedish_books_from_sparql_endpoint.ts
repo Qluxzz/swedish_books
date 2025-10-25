@@ -46,7 +46,9 @@ async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
 
 interface Release {
   title: string
+  authorId: string
   author: string
+  lifeSpan?: string
   isbn?: string
   genres: Set<string>
   goodreads?: Goodreads

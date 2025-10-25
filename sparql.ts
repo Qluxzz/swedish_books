@@ -38,10 +38,12 @@ export interface Results {
     work: Value
     instance: Value
     title: Value
+    authorId: Value
     givenName: Value
     familyName: Value
+    lifeSpan?: Value
     isbn?: Value
-    gf: Value
+    genre: Value
   }[]
 }
 
