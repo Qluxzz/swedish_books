@@ -70,7 +70,13 @@ async function attemptWithTimeout<T>(
     try {
       return await fn()
     } catch (error) {
-      if (currentAttempt === attempts) throw error
+      if (currentAttempt === attempts)
+        throw new Error(
+          `Maximum number of attempts (${attempts}) was reached!`,
+          {
+            cause: error,
+          }
+        )
 
       await waitMs(timeoutMs * currentAttempt)
     }
@@ -79,8 +85,26 @@ async function attemptWithTimeout<T>(
   throw new Error("Unexpected, should have thrown error on last attempt")
 }
 
+/**
+ * Allows you to throw errors in the end of an optional chain
+ * @example obj?.that?.might?.be?.null ?? throwError("Did not expect chain to be null!")
+ * @param message
+ */
 function throwError(message: string): never {
   throw Error(message)
+}
+
+/**
+ * Log with time
+ * @example [2011-11-11 11:11:11]: Message
+ * @param message
+ * @param optionalParams
+ */
+function log(message?: any, ...optionalParams: any[]) {
+  console.log(
+    `[${new Date().toLocaleString("sv")}]: ${message}`,
+    ...optionalParams
+  )
 }
 
 export {
@@ -89,4 +113,5 @@ export {
   getFileOrDownload,
   attemptWithTimeout,
   throwError,
+  log,
 }

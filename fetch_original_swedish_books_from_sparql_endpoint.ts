@@ -5,7 +5,7 @@
 
 import { writeFile } from "fs/promises"
 import goodreads, { Goodreads } from "./goodreads.ts"
-import { attemptWithTimeout, chunk, throwError } from "./helpers.js"
+import { attemptWithTimeout, chunk, log, throwError } from "./helpers.js"
 import pLimit from "p-limit"
 import { loadLibrisSPARQLSearchResults, Type } from "./sparql.ts"
 
@@ -136,12 +136,12 @@ const tasks = [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) =>
   limit(async function () {
     const year = STARTING_YEAR + i
 
-    console.log(`${year}: Fetching titles`)
+    log(`${year}: Fetching titles`)
     const result = await findTitlesPublishedInYear(year)
-    console.log(`${year}: Try to add Goodreads data`)
+    log(`${year}: Try to add Goodreads data`)
     const enhanced = await enhanceReleaseWithDataFromGoodReads(result)
 
-    console.log(
+    log(
       `${year}: Found ${enhanced.length} releases, of which ${hasGoodReadsData(
         enhanced
       )} releases were found on Goodread`
@@ -157,4 +157,4 @@ const tasks = [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) =>
 
 await Promise.all(tasks)
 
-console.info("Done!")
+log("Done!")
