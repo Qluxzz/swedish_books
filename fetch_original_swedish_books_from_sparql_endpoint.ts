@@ -63,22 +63,16 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
 
         if (invalid.has(x.work.value)) return acc
 
-        // Ignore works without a valid reference
-        if (x.work.type === Type.Bnode) {
-          invalid.add(x.work.value)
-          return acc
-        }
-
         // Skip adding if genre is bNode, if it shows up under another genre, we will add it then
-        if (x.gf.type === Type.Bnode) return acc
+        if (x.genre.type === Type.Bnode) return acc
 
         // Ignore all children's books
-        if (x.gf.value.startsWith("https://id.kb.se/term/barngf")) {
+        if (x.genre.value.startsWith("https://id.kb.se/term/barngf")) {
           invalid.add(x.work.value)
           return acc
         }
 
-        if (INVALID_GENRES.has(x.gf.value)) {
+        if (INVALID_GENRES.has(x.genre.value)) {
           invalid.add(x.work.value)
           // Since we get one row per genre we might have added a previous instance
           // before we know it was invalid, so we remove it
@@ -88,12 +82,14 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
         }
 
         const existing = valid.get(x.work.value)
-        if (existing) existing.genres.add(x.gf.value)
+        if (existing) existing.genres.add(x.genre.value)
         else
           valid.set(x.work.value, {
             title: x.title.value,
+            authorId: x.authorId.value,
             author: `${x.givenName.value} ${x.familyName.value}`,
-            genres: new Set<string>([x.gf.value]),
+            lifeSpan: x.lifeSpan?.value,
+            genres: new Set<string>([x.genre.value]),
             isbn: x.isbn?.value,
           })
 
