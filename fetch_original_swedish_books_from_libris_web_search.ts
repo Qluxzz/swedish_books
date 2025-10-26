@@ -11,8 +11,8 @@
 
 import { JSDOM } from "jsdom"
 import fs from "node:fs/promises"
-import { attemptWithTimeout, chunk, getFileOrDownload } from "./helpers.js"
-import goodreads from "./goodreads.js"
+import { getFileOrDownload } from "./helpers.js"
+import { enhanceWithDataFromGoodReads } from "./goodreads.js"
 
 const translated = [
   "översättning",
@@ -187,46 +187,11 @@ async function loadLibrisSearchResults(
   return await getFileOrDownload(fileName, url)
 }
 
-interface GoodreadsData {
-  avgRating: string
-  ratingsCount: number
-  numPages: number
-}
-
 interface Release {
   title: string
   author: string
   librisId: string
   isbn?: string
-}
-
-interface FullRelease extends Required<Release> {
-  goodreads: GoodreadsData
-}
-
-async function enhanceReleaseWithDataFromGoodReads(titles: Release[]) {
-  const result: (FullRelease | Release)[] = []
-  const chunks = chunk(
-    titles.map((x) => async () => {
-      if (!x.isbn) return x
-
-      const result = await goodreads.getByISBN(x.isbn)
-      if (result) return { ...x, goodreads: result }
-
-      return x
-    }),
-    10
-  )
-
-  for (const chunk of chunks) {
-    const res = await attemptWithTimeout(() =>
-      Promise.all(chunk.map((f) => f()))
-    )
-
-    result.push(...res)
-  }
-
-  return result
 }
 
 function hasGoodReadsData(items: object[]) {
@@ -239,7 +204,7 @@ const END_YEAR = 2024
 for (let i = STARTING_YEAR; i <= END_YEAR; ++i) {
   console.log(`Fetching releases for year ${i}`)
 
-  const result = await enhanceReleaseWithDataFromGoodReads(
+  const result = await enhanceWithDataFromGoodReads(
     await findTitlesPublishedInYear(i)
   )
 
