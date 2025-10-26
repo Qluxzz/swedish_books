@@ -3,3 +3,11 @@ node_modules
 json*/
 html*/
 goodreads/
+
+# Elm pages
+node_modules/
+elm-stuff/
+dist/
+.elm-pages/
+functions/render/elm-pages-cli.mjs
+functions/server-render/elm-pages-cli.mjs
