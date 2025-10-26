@@ -101,12 +101,12 @@ view app shared =
                 [ Html.section [ Html.Attributes.class "section" ]
                     [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Betygsatta Fynd" ]
                     , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa sällsynta verk har lästs av några få. Varje bok bär spår av tiden och väntar på att återupptäckas." ]
-                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.view app.data.ratedBooks)
+                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.viewWithLinkToYear app.data.ratedBooks)
                     ]
                 , Html.section [ Html.Attributes.class "section" ]
                     [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Mysterierna" ]
                     , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Böcker utan betyg. Deras historia är oklar, men de väntar på att bli utforskade." ]
-                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.view app.data.unratedBooks)
+                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.viewWithLinkToYear app.data.unratedBooks)
                     ]
                 ]
             ]

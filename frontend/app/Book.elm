@@ -1,4 +1,4 @@
-module Book exposing (..)
+module Book exposing (Book, decode, viewWithLinkToYear, viewWithoutLinkToYear)
 
 import Html
 import Html.Attributes
@@ -52,8 +52,18 @@ decode =
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "imageId" Json.Decode.string))
 
 
-view : Book -> Html.Html msg
-view book =
+viewWithoutLinkToYear : Book -> Html.Html msg
+viewWithoutLinkToYear =
+    view False
+
+
+viewWithLinkToYear : Book -> Html.Html msg
+viewWithLinkToYear =
+    view True
+
+
+view : Bool -> Book -> Html.Html msg
+view linkToYear book =
     case book of
         Rated b r ->
             Html.article [ Html.Attributes.class "book-card" ]
@@ -65,11 +75,10 @@ view book =
                         ]
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
-                        [ Html.a [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt b.year })) ] [ Html.span [ Html.Attributes.class "book-year" ] [ Html.text <| String.fromInt b.year ] ]
-                        , Html.div [ Html.Attributes.class "book-rating" ]
-                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "../star.svg" ] []
-                            , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
-                            ]
+                        [ yearView b.year linkToYear ]
+                    , Html.div [ Html.Attributes.class "book-rating" ]
+                        [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "../star.svg" ] []
+                        , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
                         ]
                     ]
                 ]
@@ -82,8 +91,7 @@ view book =
                     , Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| b.author, lifeSpanView b.lifeSpan ]
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
-                        [ Html.a [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt b.year })) ] [ Html.span [ Html.Attributes.class "book-year" ] [ Html.text <| String.fromInt b.year ] ]
-                        ]
+                        [ yearView b.year linkToYear ]
                     ]
                 ]
 
@@ -97,3 +105,16 @@ lifeSpanView s =
 
             Just s2 ->
                 "(" ++ s2 ++ ")"
+
+
+yearView : Int -> Bool -> Html.Html msg
+yearView year createLink =
+    let
+        y =
+            Html.span [ Html.Attributes.class "book-year" ] [ Html.text <| String.fromInt year ]
+    in
+    if createLink then
+        Html.a [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt year })) ] [ y ]
+
+    else
+        y
