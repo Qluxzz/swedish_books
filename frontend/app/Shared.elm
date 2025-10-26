@@ -92,7 +92,6 @@ view :
     -> View msg
     -> { body : List (Html msg), title : String }
 view sharedData page model toMsg pageView =
-    { body =
-        [ Html.main_ [] pageView.body ]
+    { body = pageView.body
     , title = pageView.title
     }

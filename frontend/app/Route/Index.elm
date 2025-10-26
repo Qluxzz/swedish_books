@@ -55,12 +55,12 @@ data =
         (\rated unrated -> { ratedBooks = rated, unratedBooks = unrated })
         (BackendTask.Custom.run "getRatedTitles"
             Json.Encode.null
-            (Json.Decode.list Book.decodeRated)
+            (Json.Decode.list Book.decode)
             |> BackendTask.allowFatal
         )
         (BackendTask.Custom.run "getUnratedTitles"
             Json.Encode.null
-            (Json.Decode.list Book.decodeUnrated)
+            (Json.Decode.list Book.decode)
             |> BackendTask.allowFatal
         )
 
@@ -101,12 +101,12 @@ view app shared =
                 [ Html.section [ Html.Attributes.class "section" ]
                     [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Betygsatta Fynd" ]
                     , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa sällsynta verk har lästs av några få. Varje bok bär spår av tiden och väntar på att återupptäckas." ]
-                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map bookView app.data.ratedBooks)
+                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.view app.data.ratedBooks)
                     ]
                 , Html.section [ Html.Attributes.class "section" ]
                     [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Mysterierna" ]
                     , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Böcker utan betyg. Deras historia är oklar, men de väntar på att bli utforskade." ]
-                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map bookView app.data.unratedBooks)
+                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.view app.data.unratedBooks)
                     ]
                 ]
             ]
@@ -117,50 +117,3 @@ view app shared =
             ]
         ]
     }
-
-
-bookView : Book.Book -> Html.Html msg
-bookView book =
-    case book of
-        Book.Rated b r ->
-            Html.article [ Html.Attributes.class "book-card" ]
-                [ Html.div [ Html.Attributes.class "book-cover " ] [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ r.imageId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
-                , Html.div [ Html.Attributes.class "book-info" ]
-                    [ Html.div [ Html.Attributes.class "book-details" ]
-                        [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
-                        , Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| b.author, lifeSpan b.lifeSpan ]
-                        ]
-                    , Html.hr [] []
-                    , Html.div [ Html.Attributes.class "book-meta" ]
-                        [ Html.span [ Html.Attributes.class "book-year" ] [ Html.text <| String.fromInt b.year ]
-                        , Html.div [ Html.Attributes.class "book-rating" ]
-                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "star.svg" ] []
-                            , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
-                            ]
-                        ]
-                    ]
-                ]
-
-        Book.Unrated b ->
-            Html.article [ Html.Attributes.class "book-card" ]
-                [ Html.div [ Html.Attributes.class "book-info" ]
-                    [ Html.div [ Html.Attributes.class "book-details" ]
-                        [ Html.a [ Html.Attributes.href <| "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ b.title ++ " " ++ b.author ++ "&d=libris&f=simp&spell=true" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
-                    , Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| b.author, lifeSpan b.lifeSpan ]
-                    , Html.hr [] []
-                    , Html.div [ Html.Attributes.class "book-meta" ]
-                        [ Html.span [ Html.Attributes.class "book-year" ] [ Html.text <| String.fromInt b.year ]
-                        ]
-                    ]
-                ]
-
-
-lifeSpan : Maybe String -> Html.Html msg
-lifeSpan s =
-    Html.text <|
-        case s of
-            Nothing ->
-                ""
-
-            Just s2 ->
-                "(" ++ s2 ++ ")"
