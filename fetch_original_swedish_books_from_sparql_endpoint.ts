@@ -29,80 +29,8 @@ interface Release {
   goodreads?: Goodreads
 }
 
-async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
-  const data = await loadLibrisSPARQLSearchResults(year)
-
-  // We get one row per genre of the work
-  return data.results.bindings
-    .reduce<{ invalid: Set<string>; valid: Map<string, Release> }>(
-      (acc, x) => {
-        const { invalid, valid } = acc
-
-        if (invalid.has(x.work.value)) return acc
-
-        // Skip adding if genre is bNode, if it shows up under another genre, we will add it then
-        if (x.genre.type === Type.Bnode) return acc
-
-        // Ignore all children's books
-        if (x.genre.value.startsWith("https://id.kb.se/term/barngf")) {
-          invalid.add(x.work.value)
-
-          // Since we get one row per genre we might have added a previous instance
-          // before we know it was invalid, so we remove it
-          valid.delete(x.work.value)
-
-          return acc
-        }
-
-        if (INVALID_GENRES.has(x.genre.value)) {
-          invalid.add(x.work.value)
-          // Since we get one row per genre we might have added a previous instance
-          // before we know it was invalid, so we remove it
-          valid.delete(x.work.value)
-
-          return acc
-        }
-
-        const existing = valid.get(x.work.value)
-        if (existing) existing.genres.add(x.genre.value)
-        else {
-          if (x.isbn?.value) {
-            const { result, normalized } = isValidISBN(x.isbn.value)
-
-            if (!result) {
-              // console.error(
-              //   `Book ${x.title.value} by ${x.givenName.value} ${x.familyName.value} had an invalid ISBN (${x.isbn.value}) `
-              // )
-
-              x.isbn = undefined
-            } else {
-              x.isbn.value = normalized
-            }
-          }
-
-          valid.set(x.work.value, {
-            title: x.title.value,
-            authorId:
-              x.author.value.split("/").pop()?.split("#").at(0) ??
-              throwError(
-                `${x.author.value} could not be converted to just an author id!`
-              ),
-            author: `${x.givenName.value} ${x.familyName.value}`,
-            lifeSpan: x.lifeSpan?.value,
-            genres: new Set<string>([x.genre.value]),
-            isbn: x.isbn?.value,
-          })
-        }
-
-        return acc
-      },
-      { invalid: new Set<string>(), valid: new Map() }
-    )
-    .valid.values()
-    .toArray()
-}
-
-const INVALID_GENRES = new Set([
+const UNWANTED_GENRES = new Set([
+  "https://id.kb.se/marc/Autobiography",
   "https://id.kb.se/marc/ComicOrGraphicNovel",
   "https://id.kb.se/marc/ComicStrip",
   "https://id.kb.se/marc/Encyclopedia",
@@ -115,18 +43,96 @@ const INVALID_GENRES = new Set([
   "https://id.kb.se/term/gmgpc/swe/Tecknade%20serier",
   "https://id.kb.se/term/saogf/Allegorier",
   "https://id.kb.se/term/saogf/Bildverk",
+  "https://id.kb.se/term/saogf/Biografier",
+  "https://id.kb.se/term/saogf/L%C3%A4romedel",
   "https://id.kb.se/term/saogf/Ljudb%C3%B6cker",
   "https://id.kb.se/term/saogf/Ljudbearbetningar",
+  "https://id.kb.se/term/saogf/Ordspr%C3%A5k%20och%20tales%C3%A4tt",
   "https://id.kb.se/term/saogf/Poesi",
+  "https://id.kb.se/term/saogf/Sj%C3%A4lvbiografier",
   "https://id.kb.se/term/saogf/Tecknade%20serier",
 ])
+
+async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
+  const data = await loadLibrisSPARQLSearchResults(year)
+
+  // We get one row per genre of the work
+  return (
+    data.results.bindings
+      .reduce<{ invalid: Set<string>; valid: Map<string, Release> }>(
+        (acc, x) => {
+          const { invalid, valid } = acc
+
+          if (invalid.has(x.work.value)) return acc
+
+          // Skip adding if genre is bNode, if it shows up under another genre, we will add it then
+          if (x.genre.type === Type.Bnode) return acc
+
+          // Ignore unwanted genres
+          if (
+            x.genre.value.startsWith("https://id.kb.se/term/barn") ||
+            x.genre.value.startsWith("https://id.kb.se/term/gmgpc") ||
+            UNWANTED_GENRES.has(x.genre.value)
+          ) {
+            invalid.add(x.work.value)
+
+            // Since we get one row per genre we might have added a previous instance
+            // before we know it was invalid, so we remove it
+            valid.delete(x.work.value)
+
+            return acc
+          }
+
+          const existing = valid.get(x.work.value)
+          if (existing) existing.genres.add(x.genre.value)
+          else {
+            valid.set(x.work.value, {
+              title: x.title.value,
+              authorId:
+                x.author.value.split("/").pop()?.split("#").at(0) ??
+                throwError(
+                  `${x.author.value} could not be converted to just an author id!`
+                ),
+              author: `${x.givenName.value} ${x.familyName.value}`,
+              lifeSpan: x.lifeSpan?.value,
+              genres: new Set<string>([x.genre.value]),
+              isbn: x.isbn?.value,
+            })
+          }
+
+          return acc
+        },
+        { invalid: new Set<string>(), valid: new Map() }
+      )
+      .valid.values()
+      // Validate ISBN
+      .map((x) => {
+        if (x.isbn) {
+          const { result, normalized } = isValidISBN(x.isbn)
+
+          if (!result) {
+            console.error(
+              `Book ${x.title} by ${x.author} had an invalid ISBN (${x.isbn}) `
+            )
+
+            x.isbn = undefined
+          } else {
+            x.isbn = normalized
+          }
+        }
+
+        return x
+      })
+      .toArray()
+  )
+}
 
 const STARTING_YEAR = 1850
 const END_YEAR = 2024
 
 // The SPARQL endpoint takes around 50 seconds for each response,
 // so we start 20 requests in parallel
-const limit = pLimit(30)
+const limit = pLimit(40)
 
 const tasks = [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) =>
   limit(async function () {
