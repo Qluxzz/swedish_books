@@ -20,11 +20,11 @@ CREATE TABLE IF NOT EXISTS genres (
     conn.execute(
         """
 CREATE TABLE IF NOT EXISTS book_genre(
-    book_id INTEGER REFERENCES books(id),
-    genre_id INTEGER REFERENCES genres(id),
+    book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+    genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
     PRIMARY KEY(book_id, genre_id)
 )
-                 """
+        """
     )
     conn.execute(
         """
@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS books (
     avgRating INTEGER,
     ratings INTEGER,
     imageId TEXT,
+    bookUrl TEXT,
     UNIQUE (title, author)
 )
     """
@@ -57,8 +58,8 @@ CREATE TABLE IF NOT EXISTS books (
                     # If title with same author already exist, keep the oldest release
                     (book_id,) = conn.execute(
                         """
-                            INSERT INTO books(title, author, lifeSpan, year, isbn, pages, avgRating, ratings, imageId)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
+                            INSERT INTO books(title, author, lifeSpan, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
                             UPDATE
                             SET id=id, year=MIN(excluded.year, books.year)
                             RETURNING id
@@ -72,6 +73,7 @@ CREATE TABLE IF NOT EXISTS books (
                             goodreads.get("numPages", None),
                             goodreads.get("avgRating", None),
                             goodreads.get("ratingsCount", None),
+                            goodreads.get("bookUrl", None),
                             get_image_id(book),
                         ),
                     ).fetchone()
