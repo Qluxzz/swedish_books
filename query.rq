@@ -1,9 +1,10 @@
 PREFIX : <https://id.kb.se/vocab/>
 PREFIX marc: <https://id.kb.se/marc/>
 PREFIX lge: <https://id.kb.se/language/>
+PREFIX saogf: <https://id.kb.se/term/saogf>
 
 SELECT DISTINCT 
-  ?work ?instance ?title ?givenName ?familyName ?lifeSpan ?author ?isbn ?genre 
+  ?work ?title ?givenName ?familyName ?lifeSpan ?author ?isbn ?genre 
 {
   ?instance a ?type ;
     :instanceOf ?work ;
@@ -22,6 +23,20 @@ SELECT DISTINCT
   FILTER(?workType IN (:Text, :Work, :TextualWork))
   # Ignore translated works
   FILTER NOT EXISTS { ?work :translationOf [] }
+  FILTER NOT EXISTS { ?work :intendedAudience marc:Juvenile }
+
+  # Work must contain at least one of the following genres
+  FILTER EXISTS { 
+    ?work :genreForm ?wantedGenre .
+    FILTER(?wantedGenre IN(
+      marc:FictionNotFurtherSpecified,
+      marc:HumorSatiresEtc,
+      marc:Novel,
+      marc:ShortStory,
+      saogf:Noveller,
+      saogf:Romaner
+    ))
+  }
 
   # Get author information
   ?author :givenName ?givenName ; :familyName ?familyName
