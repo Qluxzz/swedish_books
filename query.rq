@@ -28,6 +28,12 @@ SELECT DISTINCT
   # Ignore children's books
   FILTER NOT EXISTS { ?work :intendedAudience marc:Juvenile }
 
+  # Keep only works where Swedish is the ONLY language
+  FILTER NOT EXISTS {
+    ?work :language ?otherLang .
+    FILTER(?otherLang != lge:swe)
+  }
+
   # Work must contain at least one of the following genres
   FILTER EXISTS { 
     ?work :genreForm ?wantedGenre .
