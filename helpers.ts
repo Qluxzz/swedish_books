@@ -108,7 +108,7 @@ function log(message?: any, ...optionalParams: any[]) {
 }
 
 function isValidISBN(isbn: string): { result: boolean; normalized: string } {
-  const clean = isbn.replace(/[-\s]/g, "").toUpperCase()
+  const clean = isbn.replace(/[^\dX]/g, "").toUpperCase()
 
   if (/^\d{9}[\dX]$/.test(clean)) {
     // ISBN-10 checksum
