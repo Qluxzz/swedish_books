@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS books (
     id INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
     author TEXT NOT NULL,
+    lifeSpan TEXT,
     year INTEGER NOT NULL,
     isbn TEXT,
     pages INTEGER,
@@ -56,8 +57,8 @@ CREATE TABLE IF NOT EXISTS books (
                     # If title with same author already exist, keep the oldest release
                     (book_id,) = conn.execute(
                         """
-                            INSERT INTO books(title, author, year, isbn, pages, avgRating, ratings, imageId)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
+                            INSERT INTO books(title, author, lifeSpan, year, isbn, pages, avgRating, ratings, imageId)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
                             UPDATE
                             SET id=id, year=MIN(excluded.year, books.year)
                             RETURNING id
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS books (
                         (
                             book["title"],
                             book["author"],
+                            book.get("lifeSpan", None),
                             year,
                             book.get("isbn", None),
                             goodreads.get("numPages", None),
