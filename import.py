@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS books (
     ratings INTEGER,
     imageId TEXT,
     bookUrl TEXT,
+    instances INTEGER NOT NULL DEFAULT 1,
     UNIQUE (title, author)
 )
     """
@@ -56,12 +57,17 @@ CREATE TABLE IF NOT EXISTS books (
                     goodreads = book.get("goodreads", {})
 
                     # If title with same author already exist, keep the oldest release
+                    # If title with same author already exist,
+                    # increase the number of instances for the work,
+                    # this will be used to filter out popular authors,
+                    # since if they have been republished many times,
+                    # they are probably more popular
                     (book_id,) = conn.execute(
                         """
                             INSERT INTO books(title, author, lifeSpan, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
                             UPDATE
-                            SET id=id, year=MIN(excluded.year, books.year)
+                            SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
                             RETURNING id
                         """,
                         (
