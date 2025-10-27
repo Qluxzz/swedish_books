@@ -1,4 +1,4 @@
-module Book exposing (Book, decode, viewWithLinkToYear, viewWithoutLinkToYear)
+module Book exposing (Book, decode, view)
 
 import Html
 import Html.Attributes
@@ -52,16 +52,6 @@ decode =
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "imageId" Json.Decode.string))
 
 
-viewWithoutLinkToYear : Book -> Html.Html msg
-viewWithoutLinkToYear =
-    view False
-
-
-viewWithLinkToYear : Book -> Html.Html msg
-viewWithLinkToYear =
-    view True
-
-
 view : Bool -> Book -> Html.Html msg
 view linkToYear book =
     case book of
@@ -71,14 +61,15 @@ view linkToYear book =
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
                         [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
-                        , Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| b.author, lifeSpanView b.lifeSpan ]
+                        , bookAuthor b
                         ]
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
-                        [ yearView b.year linkToYear ]
-                    , Html.div [ Html.Attributes.class "book-rating" ]
-                        [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "../star.svg" ] []
-                        , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
+                        [ yearView b.year linkToYear
+                        , Html.div [ Html.Attributes.class "book-rating" ]
+                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "../star.svg" ] []
+                            , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
+                            ]
                         ]
                     ]
                 ]
@@ -88,7 +79,7 @@ view linkToYear book =
                 [ Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
                         [ Html.a [ Html.Attributes.href <| "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ b.title ++ " " ++ b.author ++ "&d=libris&f=simp&spell=true" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
-                    , Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| b.author, lifeSpanView b.lifeSpan ]
+                    , bookAuthor b
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
                         [ yearView b.year linkToYear ]
@@ -96,15 +87,14 @@ view linkToYear book =
                 ]
 
 
-lifeSpanView : Maybe String -> Html.Html msg
-lifeSpanView s =
-    Html.text <|
-        case s of
-            Nothing ->
-                ""
+bookAuthor : Model -> Html.Html msg
+bookAuthor { author, lifeSpan } =
+    Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| ([ Just author, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ") ]
 
-            Just s2 ->
-                "(" ++ s2 ++ ")"
+
+lifeSpanView : Maybe String -> Maybe String
+lifeSpanView =
+    Maybe.map (\s -> "(" ++ s ++ ")")
 
 
 yearView : Int -> Bool -> Html.Html msg

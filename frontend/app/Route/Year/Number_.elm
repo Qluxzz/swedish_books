@@ -9,10 +9,9 @@ module Route.Year.Number_ exposing (Model, Msg, RouteParams, route, Data, Action
 import BackendTask
 import BackendTask.Custom
 import Book
+import BookList
 import FatalError exposing (FatalError)
 import Head
-import Html
-import Html.Attributes
 import Json.Decode
 import Json.Encode
 import PagesMsg
@@ -74,46 +73,14 @@ view :
 view app shared =
     { title = "Böcker för år " ++ app.routeParams.number
     , body =
-        [ Html.header []
-            [ Html.h1 [] [ Html.text <| "Böcker för år " ++ app.routeParams.number ]
-            , Html.p [] [ Html.text "Svenska verk från bibliotekets magasin" ]
-            ]
-        , Html.main_ []
-            [ Html.div [ Html.Attributes.class "container" ]
-                [ if List.isEmpty app.data.ratedBooks then
-                    Html.text ""
-
-                  else
-                    Html.section [ Html.Attributes.class "section" ]
-                        [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Betygsatta Fynd" ]
-                        , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa sällsynta verk har lästs av några få. Varje bok bär spår av tiden och väntar på att återupptäckas." ]
-                        , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.viewWithoutLinkToYear app.data.ratedBooks)
-                        ]
-                , if List.isEmpty app.data.unratedBooks then
-                    Html.text ""
-
-                  else
-                    Html.section [ Html.Attributes.class "section" ]
-                        [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Mysterierna" ]
-                        , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Böcker utan betyg. Deras historia är oklar, men de väntar på att bli utforskade." ]
-                        , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.viewWithoutLinkToYear app.data.unratedBooks)
-                        ]
-                , if List.isEmpty app.data.unratedBooks && List.isEmpty app.data.ratedBooks then
-                    Html.text <| "Inga böcker hittades för år " ++ app.routeParams.number
-
-                  else
-                    Html.text ""
-                ]
-            ]
-        , Html.footer []
-            [ Html.div [ Html.Attributes.class "container" ]
-                [ Html.p [] [ Html.text "En samling av glömda svenska litterära skatter" ]
-                ]
-            ]
-        ]
+        BookList.view False app.data.ratedBooks app.data.unratedBooks
     }
 
 
 pages : BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 pages =
-    BackendTask.succeed (List.range 1850 2024 |> List.map (\year -> { number = String.fromInt year }))
+    -- These are all years we currently have titles for
+    List.range 1850 2024
+        |> List.map String.fromInt
+        |> List.map (\year -> { number = year })
+        |> BackendTask.succeed

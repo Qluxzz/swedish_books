@@ -3,13 +3,14 @@ module Route.Index exposing (ActionData, Data, Model, Msg, route)
 import BackendTask exposing (BackendTask)
 import BackendTask.Custom
 import Book
+import BookList exposing (view)
 import FatalError exposing (FatalError)
 import Head
 import Head.Seo as Seo
-import Html
-import Html.Attributes
 import Json.Decode
 import Json.Encode
+import LanguageTag.Language
+import LanguageTag.Region
 import MimeType exposing (MimeText(..))
 import Pages.Url
 import PagesMsg exposing (PagesMsg)
@@ -68,7 +69,7 @@ data =
 head :
     App Data ActionData RouteParams
     -> List Head.Tag
-head app =
+head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
         , siteName = "Gömda böcker"
@@ -79,8 +80,8 @@ head app =
             , mimeType = Nothing
             }
         , description = "Welcome to elm-pages!"
-        , locale = Nothing
-        , title = "elm-pages is running"
+        , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
+        , title = "Gömda böcker"
         }
         |> Seo.website
 
@@ -89,31 +90,8 @@ view :
     App Data ActionData RouteParams
     -> Shared.Model
     -> View (PagesMsg Msg)
-view app shared =
+view app _ =
     { title = "Gömda böcker"
     , body =
-        [ Html.header []
-            [ Html.h1 [] [ Html.text "Glömda böcker" ]
-            , Html.p [] [ Html.text "Svenska verk från bibliotekets magasin" ]
-            ]
-        , Html.main_ []
-            [ Html.div [ Html.Attributes.class "container" ]
-                [ Html.section [ Html.Attributes.class "section" ]
-                    [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Betygsatta Fynd" ]
-                    , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa sällsynta verk har lästs av några få. Varje bok bär spår av tiden och väntar på att återupptäckas." ]
-                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.viewWithLinkToYear app.data.ratedBooks)
-                    ]
-                , Html.section [ Html.Attributes.class "section" ]
-                    [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Mysterierna" ]
-                    , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Böcker utan betyg. Deras historia är oklar, men de väntar på att bli utforskade." ]
-                    , Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.viewWithLinkToYear app.data.unratedBooks)
-                    ]
-                ]
-            ]
-        , Html.footer []
-            [ Html.div [ Html.Attributes.class "container" ]
-                [ Html.p [] [ Html.text "En samling av glömda svenska litterära skatter" ]
-                ]
-            ]
-        ]
+        BookList.view True app.data.ratedBooks app.data.unratedBooks
     }

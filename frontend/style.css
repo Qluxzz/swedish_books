@@ -48,6 +48,10 @@ body {
   flex-direction: column;
 }
 
+a {
+  color: var(--color-foreground);
+}
+
 main {
   flex-grow: 1;
 }
@@ -224,17 +228,15 @@ section {
   color: var(--color-foreground);
 }
 
-.no-cover-text {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.3);
+.works-per-year {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Footer */
 footer {
-  margin-top: var(--spacing-20);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(255, 255, 255, 0.03);
   padding: var(--spacing-8) 0;

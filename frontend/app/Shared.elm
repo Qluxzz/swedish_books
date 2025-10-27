@@ -1,10 +1,14 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
 
 import BackendTask exposing (BackendTask)
+import BackendTask.Custom
+import Dict
 import Effect exposing (Effect)
 import FatalError exposing (FatalError)
 import Html exposing (Html)
-import Html.Events
+import Html.Attributes
+import Json.Decode
+import Json.Encode
 import Pages.Flags
 import Pages.PageUrl exposing (PageUrl)
 import Route exposing (Route)
@@ -30,7 +34,8 @@ type Msg
 
 
 type alias Data =
-    ()
+    { worksPerYear : Dict.Dict String Int
+    }
 
 
 type SharedMsg
@@ -55,7 +60,7 @@ init :
             , pageUrl : Maybe PageUrl
             }
     -> ( Model, Effect Msg )
-init flags maybePagePath =
+init _ _ =
     ( { showMenu = False }
     , Effect.none
     )
@@ -64,7 +69,7 @@ init flags maybePagePath =
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        SharedMsg globalMsg ->
+        SharedMsg _ ->
             ( model, Effect.none )
 
         MenuClicked ->
@@ -78,7 +83,12 @@ subscriptions _ _ =
 
 data : BackendTask FatalError Data
 data =
-    BackendTask.succeed ()
+    (BackendTask.Custom.run "getCountOfTitlesPerYear"
+        Json.Encode.null
+        (Json.Decode.dict Json.Decode.int)
+        |> BackendTask.allowFatal
+    )
+        |> BackendTask.map (\dict -> { worksPerYear = dict })
 
 
 view :
@@ -91,7 +101,42 @@ view :
     -> (Msg -> msg)
     -> View msg
     -> { body : List (Html msg), title : String }
-view sharedData page model toMsg pageView =
-    { body = pageView.body
+view sharedData page _ _ pageView =
+    { body =
+        [ Html.header []
+            [ Html.h1 []
+                [ Html.text <|
+                    case page.route of
+                        Just (Route.Year__Number_ { number }) ->
+                            "Böcker för år " ++ number
+
+                        _ ->
+                            "Gömda böcker"
+                ]
+            , Html.p [] [ Html.text "Svenska verk från bibliotekets magasin" ]
+            ]
+        , Html.main_ []
+            [ Html.div [ Html.Attributes.class "container" ]
+                (pageView.body
+                    ++ [ Html.section [ Html.Attributes.class "section" ]
+                            [ Html.h2 [ Html.Attributes.class "section-title" ]
+                                [ Html.text "Hitta titlar per år" ]
+                            , Html.div [ Html.Attributes.class "works-per-year" ]
+                                (sharedData.worksPerYear
+                                    |> Dict.toList
+                                    |> List.reverse
+                                    |> List.map
+                                        (\( year, amount ) -> Html.a [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = year })) ] [ Html.text <| year ++ " (" ++ String.fromInt amount ++ ")" ])
+                                )
+                            ]
+                       ]
+                )
+            ]
+        , Html.footer []
+            [ Html.div [ Html.Attributes.class "container" ]
+                [ Html.p [] [ Html.text "En samling av glömda svenska litterära skatter" ]
+                ]
+            ]
+        ]
     , title = pageView.title
     }
