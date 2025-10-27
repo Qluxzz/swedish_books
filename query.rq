@@ -3,9 +3,10 @@ PREFIX marc: <https://id.kb.se/marc/>
 PREFIX lge: <https://id.kb.se/language/>
 PREFIX saogf: <https://id.kb.se/term/saogf/>
 PREFIX country: <https://id.kb.se/country/>
+PREFIX nat: <https://id.kb.se/nationality/>
 
 SELECT DISTINCT 
-  ?work ?title ?givenName ?familyName ?lifeSpan ?author ?isbn ?genre 
+  ?work ?title ?author ?givenName ?familyName ?lifeSpan ?isbn ?genre
 {
   ?instance a ?type ;
     :instanceOf ?work ;
@@ -48,6 +49,7 @@ SELECT DISTINCT
   }
 
   # Get author information
-  ?author :givenName ?givenName ; :familyName ?familyName
+  ?author :givenName ?givenName ; :familyName ?familyName ; :nationality nat:e-sw---
   OPTIONAL { ?author :lifeSpan ?lifeSpan }
+  OPTIONAL { ?author :identifiedBy [ a :ISNI ; :value ?isni ]}
 }
