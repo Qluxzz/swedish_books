@@ -30,13 +30,12 @@ popularity AS (
   ) WHERE pct < 0.955
 )`
 
-const database = new DatabaseSync("../books6.db", {
+const database = new DatabaseSync("../books7.db", {
   readOnly: true,
 })
 
 export async function getRatedTitles() {
   console.log("Get titles")
-  const database = new DatabaseSync("../books6.db")
 
   const result = database
     .prepare(
@@ -58,10 +57,7 @@ INNER JOIN popularity p
   AND p.lifeSpan = b.lifeSpan
 INNER JOIN ranked r
   ON r.id = b.id
-  AND r.pct < 0.8
--- Needs more tweaking, I would like to highlight older titles, but not have a hard cutoff
-WHERE b.year < 2010 AND b.avgRating > 3 AND b.ratings > 10
-ORDER BY b.year DESC
+ORDER BY (ratings * avgRating) DESC
 LIMIT 24;
     `
     )
@@ -117,7 +113,7 @@ INNER JOIN popularity p
   AND p.lifeSpan = b.lifeSpan
 WHERE 
   b.year = ?
-ORDER BY b.avgRating DESC
+ORDER BY (b.ratings * b.avgRating) DESC
 LIMIT 24;
     `
     )
