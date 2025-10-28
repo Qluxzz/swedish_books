@@ -114,7 +114,6 @@ INNER JOIN popularity p
 WHERE 
   b.year = ?
 ORDER BY (b.ratings * b.avgRating) DESC
-LIMIT 24;
     `
     )
     .all(year)
@@ -134,7 +133,6 @@ INNER JOIN popularity p
   AND p.lifeSpan = b.lifeSpan
 WHERE (b.ratings IS NULL OR b.ratings = 0) AND b.year = ?
 ORDER BY p.pct DESC, RANDOM()
-LIMIT 48
     `
     )
     .all(year)
@@ -169,7 +167,7 @@ FROM books b
 INNER JOIN popularity p
   ON p.author = b.author
   AND p.lifeSpan = b.lifeSpan
-WHERE b.ratings IS NULL
+WHERE b.ratings IS NULL OR b.ratings = 0
 GROUP BY b.year
 )
 GROUP BY year
