@@ -182,13 +182,12 @@ sparqlQueue.on(
     goodReadsQueue.addAll(
       titles.map((book) => async () => {
         const data = await getDataFromGoodReads(book)
-        if (data) {
-          return {
-            work: book.workId,
-            goodreads: data,
-          }
+        if (!data) return null
+
+        return {
+          work: book.workId,
+          goodreads: data,
         }
-        return null
       })
     )
   }
@@ -210,11 +209,19 @@ log("All goodreads requests are done!")
 const fileQueue = new PQueue({ concurrency: 20 })
 fileQueue.addAll(
   parsedTitlesPerYear.map(({ year, titles }) => async () => {
+    let withGoodreadsData = 0
     const enhanced = titles.map((title) => {
-      const g = goodreads.get(title.workId)
-      if (g) title.goodreads = g
+      const gData = goodreads.get(title.workId)
+      if (gData) {
+        title.goodreads = gData
+        withGoodreadsData++
+      }
       return title
     })
+
+    log(
+      `${year}: Found ${titles.length} titles, of which ${withGoodreadsData} was found on Goodreads!`
+    )
 
     if (enhanced.length !== 0)
       await writeFile(
