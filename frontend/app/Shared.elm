@@ -121,12 +121,13 @@ view sharedData page _ _ pageView =
                     ++ [ Html.section [ Html.Attributes.class "section" ]
                             [ Html.h2 [ Html.Attributes.class "section-title" ]
                                 [ Html.text "Hitta titlar per år" ]
-                            , Html.div [ Html.Attributes.class "works-per-year" ]
-                                (sharedData.worksPerYear
-                                    |> Dict.toList
-                                    |> List.reverse
-                                    |> List.map
-                                        (\( year, amount ) -> Html.a [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = year })) ] [ Html.text <| year ++ " (" ++ String.fromInt amount ++ ")" ])
+                            , worksPerYearView sharedData.worksPerYear
+                                (case page.route of
+                                    Just (Route.Year__Number_ { number }) ->
+                                        Just number
+
+                                    _ ->
+                                        Nothing
                                 )
                             ]
                        ]
@@ -140,3 +141,40 @@ view sharedData page _ _ pageView =
         ]
     , title = pageView.title
     }
+
+
+worksPerYearView : Dict.Dict String Int -> Maybe String -> Html.Html msg
+worksPerYearView worksPerYear onYear =
+    let
+        counts =
+            worksPerYear |> Dict.values
+    in
+    Maybe.map2
+        (\min max ->
+            Html.div
+                [ Html.Attributes.class "works-per-year" ]
+                (worksPerYear
+                    |> Dict.toList
+                    |> List.reverse
+                    |> List.map
+                        (\( year, amount ) ->
+                            let
+                                normalized =
+                                    (toFloat amount - min) / (max - min)
+                            in
+                            Html.a
+                                (Html.Attributes.style "font-size" (String.fromFloat (1 + normalized) ++ "em")
+                                    :: (if Just year /= onYear then
+                                            [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = year })) ]
+
+                                        else
+                                            []
+                                       )
+                                )
+                                [ Html.text <| year ++ " (" ++ String.fromInt amount ++ ")" ]
+                        )
+                )
+        )
+        (List.minimum counts |> Maybe.map toFloat)
+        (List.maximum counts |> Maybe.map toFloat)
+        |> Maybe.withDefault (Html.text "")
