@@ -65,6 +65,7 @@ main {
 
 /* Header */
 header {
+  background-color: var(--color-muted);
   padding: var(--spacing-8);
 
   h1 {
@@ -134,6 +135,7 @@ section {
 /* Book Card */
 .book-card {
   overflow: hidden;
+  background-color: var(--color-card);
   border-radius: var(--radius);
 
   display: flex;
@@ -229,10 +231,12 @@ section {
 /* Footer */
 footer {
   padding: var(--spacing-8) 0;
+  background-color: var(--color-muted);
 }
 
 .footer-text {
   text-align: center;
   font-size: 0.875rem;
+
   color: var(--color-muted-foreground);
 }
