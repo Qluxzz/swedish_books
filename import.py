@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS books (
     """
     )
 
+    currentYear = datetime.now().year
+
+    lifeSpanRegex = re.compile("(\\d{4})")
+
     for root, _, file in os.walk("json"):
         for f in file:
             year = f.split(".")[0]
@@ -53,6 +57,14 @@ CREATE TABLE IF NOT EXISTS books (
             with open(f"{root}/{f}", "r") as file:
                 data = json.load(file)
                 for book in data:
+                    lifeSpan: str | None = book.get("lifeSpan", None)
+
+                    # Ignore works that are of living authors
+                    if lifeSpan is not None:
+                        matches = lifeSpanRegex.findall(lifeSpan)
+
+                        if len(matches) == 1 and int(matches[0]) + 100 > currentYear:
+                            continue
 
                     goodreads = book.get("goodreads", {})
 
