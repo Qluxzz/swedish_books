@@ -24,7 +24,7 @@ type alias Rating =
     { avgRating : Float
     , ratings : Int
     , bookUrl : String
-    , imageId : String
+    , imageId : Maybe String
     }
 
 
@@ -32,14 +32,13 @@ decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
         (\title author year lifeSpan avgRating ratings bookUrl imageId ->
-            Maybe.map4
-                (\avg r bUrl iId ->
-                    Rated (Model title author year lifeSpan) (Rating avg r bUrl iId)
+            Maybe.map3
+                (\avg r bUrl ->
+                    Rated (Model title author year lifeSpan) (Rating avg r bUrl imageId)
                 )
                 avgRating
                 ratings
                 bookUrl
-                imageId
                 |> Maybe.withDefault (Unrated (Model title author year lifeSpan))
         )
         |> Serializer.Json.Extra.andMap (Json.Decode.field "title" Json.Decode.string)
@@ -57,7 +56,14 @@ view linkToYear book =
     case book of
         Rated b r ->
             Html.article [ Html.Attributes.class "book-card" ]
-                [ Html.div [ Html.Attributes.class "book-cover " ] [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ r.imageId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+                [ Html.div [ Html.Attributes.class "book-cover " ]
+                    (case r.imageId of
+                        Just iId ->
+                            [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ iId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+
+                        Nothing ->
+                            []
+                    )
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
                         [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
