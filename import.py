@@ -122,7 +122,11 @@ def get_image_id(book):
     if "goodreads" not in book:
         return None
 
-    image_url = book["goodreads"]["imageUrl"]
+    image_url: str = book["goodreads"]["imageUrl"]
+
+    if "nophoto/book/111x148" in image_url:
+        return None
+
     image_id = "/".join(image_url.split("/")[-2:]).split(".")[0]
 
     return image_id
