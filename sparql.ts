@@ -42,6 +42,7 @@ export interface Results {
     givenName: Value
     familyName: Value
     lifeSpan?: Value
+    isni?: Value
     isbn?: Value
     genre: Value
   }[]

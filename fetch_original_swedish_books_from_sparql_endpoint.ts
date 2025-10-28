@@ -3,11 +3,16 @@
  * Tries to enhance data with data from goodreads using the ISBN or a combination of title and author
  */
 
+import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
-import { Goodreads, enhanceWithDataFromGoodReads } from "./goodreads.ts"
+import { Goodreads, getDataFromGoodReads } from "./goodreads.ts"
 import { isValidISBN, log, throwError } from "./helpers.js"
-import pLimit from "p-limit"
-import { loadLibrisSPARQLSearchResults, Type } from "./sparql.ts"
+import PQueue from "p-queue"
+import {
+  loadLibrisSPARQLSearchResults,
+  SparqlResponse,
+  Type,
+} from "./sparql.ts"
 
 function makeSetsSerializable(_: string, value: any) {
   // Sets can not be stringified by default, so we need to convert it to a regular array first
@@ -20,12 +25,21 @@ function hasGoodReadsData(items: object[]) {
 }
 
 interface Release {
+  /**
+   * The unique work id that all instances has as a parent
+   */
+  workId: string
   title: string
   authorId: string
   author: string
   lifeSpan?: string
   isbn?: string
   genres: Set<string>
+  /**
+   * This is the unique instance ids per work
+   * This can be used to fetch the image for the work, if we don't get it from Goodreads
+   */
+  instances: Set<string>
   goodreads?: Goodreads
 }
 
@@ -53,10 +67,8 @@ const UNWANTED_GENRES = new Set([
   "https://id.kb.se/term/saogf/Tecknade%20serier",
 ])
 
-async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
-  const data = await loadLibrisSPARQLSearchResults(year)
-
-  // We get one row per genre of the work
+function parseSparqlResult(data: SparqlResponse): Release[] {
+  // The rows are duplicated once for genre, and for instance of a work
   return (
     data.results.bindings
       .reduce<{ invalid: Set<string>; valid: Map<string, Release> }>(
@@ -84,19 +96,34 @@ async function findTitlesPublishedInYear(year: number): Promise<Release[]> {
           }
 
           const existing = valid.get(x.work.value)
-          if (existing) existing.genres.add(x.genre.value)
-          else {
+          if (existing) {
+            existing.genres.add(x.genre.value)
+            existing.instances.add(x.instance.value)
+          } else {
+            const authorId =
+              // Best case, we have an URI for the author and we use that as the id
+              x.author.type === Type.URI
+                ? x.author.value.split("/").pop()?.split("#").at(0) ??
+                  throwError(
+                    `${x.author.value} could not be converted to just an author id!`
+                  )
+                : // Otherwise we use the isni if available
+                  // And in last case we hash together the name and lifespan of the author
+                  x.isni?.value ??
+                  crypto.hash(
+                    "sha1",
+                    `${x.givenName.value}${x.familyName.value}${x.lifeSpan?.value}`
+                  )
+
             valid.set(x.work.value, {
+              workId: x.work.value,
               title: x.title.value,
-              authorId:
-                x.author.value.split("/").pop()?.split("#").at(0) ??
-                throwError(
-                  `${x.author.value} could not be converted to just an author id!`
-                ),
+              authorId,
               author: `${x.givenName.value} ${x.familyName.value}`,
               lifeSpan: x.lifeSpan?.value,
               genres: new Set<string>([x.genre.value]),
               isbn: x.isbn?.value,
+              instances: new Set<string>([x.instance.value]),
             })
           }
 
@@ -132,36 +159,71 @@ const END_YEAR = 2024
 
 // The SPARQL endpoint takes around 50 seconds for each response,
 // so we start 20 requests in parallel
-const limit = pLimit(40)
 
-const tasks = [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) =>
-  limit(async function () {
-    const year = STARTING_YEAR + i
-    try {
-      log(`${year}: Fetching titles`)
-      const result = await findTitlesPublishedInYear(year)
-      log(`${year}: Try to add Goodreads data`)
-      const enhanced = await enhanceWithDataFromGoodReads(result)
+// SPARQL Data
+const sparqlQueue = new PQueue({ concurrency: 10 })
+sparqlQueue.addAll(
+  [...Array(END_YEAR - STARTING_YEAR + 1)].map((_, i) => async () => ({
+    year: STARTING_YEAR + i,
+    data: await loadLibrisSPARQLSearchResults(STARTING_YEAR + i),
+  }))
+)
 
-      log(
-        `${year}: Found ${
-          enhanced.length
-        } releases, of which ${hasGoodReadsData(
-          enhanced
-        )} releases were found on Goodread`
+const goodReadsQueue = new PQueue({ concurrency: 20 })
+
+const parsedTitlesPerYear: { year: number; titles: Release[] }[] = []
+
+sparqlQueue.on(
+  "completed",
+  ({ year, data }: { year: number; data: SparqlResponse }) => {
+    const titles = parseSparqlResult(data)
+    parsedTitlesPerYear.push({ year, titles })
+
+    goodReadsQueue.addAll(
+      titles.map((book) => async () => {
+        const data = await getDataFromGoodReads(book)
+        if (data) {
+          return {
+            work: book.workId,
+            goodreads: data,
+          }
+        }
+        return null
+      })
+    )
+  }
+)
+
+const goodreads = new Map<string, Goodreads>()
+goodReadsQueue.on(
+  "completed",
+  (data: { work: string; goodreads: Goodreads | null }) => {
+    if (data.goodreads) goodreads.set(data.work, data.goodreads)
+  }
+)
+
+await sparqlQueue.onIdle()
+log("All sparqle requests are done!")
+await goodReadsQueue.onIdle()
+log("All goodreads requests are done!")
+
+const fileQueue = new PQueue({ concurrency: 20 })
+fileQueue.addAll(
+  parsedTitlesPerYear.map(({ year, titles }) => async () => {
+    const enhanced = titles.map((title) => {
+      const g = goodreads.get(title.workId)
+      if (g) title.goodreads = g
+      return title
+    })
+
+    if (enhanced.length !== 0)
+      await writeFile(
+        `json/${year}.json`,
+        JSON.stringify(enhanced, makeSetsSerializable, 2)
       )
-
-      if (enhanced.length !== 0)
-        await writeFile(
-          `json/${year}.json`,
-          JSON.stringify(enhanced, makeSetsSerializable, 2)
-        )
-    } catch (error) {
-      log(`${year}: Failed to fetch releases for year. ${error}`)
-    }
   })
 )
 
-await Promise.all(tasks)
+await fileQueue.onIdle()
 
 log("Done!")

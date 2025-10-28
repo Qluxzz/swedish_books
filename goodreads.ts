@@ -72,26 +72,15 @@ async function getByTitleAndAuthor(
 
 /**
  * Fetch data from Goodreads using ISBN or a combination of title and author
- * @param titles
- * @returns title with field for goodreads data if found
+ * @param book
+ * @returns goodreads data for book or null
  */
-async function enhanceWithDataFromGoodReads<
+async function getDataFromGoodReads<
   T extends { isbn?: string; title: string; author: string }
->(titles: T[]): Promise<(T & { goodreads?: Goodreads })[]> {
-  const limit = pLimit(1)
-
-  const tasks = titles.map((title) =>
-    limit(async () => {
-      const result = title.isbn
-        ? await getByISBN(title.isbn)
-        : await getByTitleAndAuthor(title.title, title.author)
-      if (result) return { ...title, goodreads: result }
-
-      return title
-    })
-  )
-
-  return await Promise.all(tasks)
+>(book: T): Promise<Goodreads | null> {
+  return book.isbn
+    ? await getByISBN(book.isbn)
+    : await getByTitleAndAuthor(book.title, book.author)
 }
 
-export { enhanceWithDataFromGoodReads }
+export { getDataFromGoodReads }
