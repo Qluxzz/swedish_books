@@ -2,6 +2,8 @@ import sqlite3
 import os
 from pathlib import Path
 import json
+from datetime import datetime
+import re
 
 
 def main():
@@ -19,6 +21,16 @@ CREATE TABLE IF NOT EXISTS genres (
     )
     conn.execute(
         """
+CREATE TABLE IF NOT EXISTS authors (
+    id INTEGER PRIMARY KEY,
+    libris_id TEXT UNIQUE NOT NULL,
+    name TEXT UNIQUE NOT NULL,
+    life_span TEXT
+)
+"""
+    )
+    conn.execute(
+        """
 CREATE TABLE IF NOT EXISTS book_genre(
     book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
     genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
@@ -31,8 +43,7 @@ CREATE TABLE IF NOT EXISTS book_genre(
 CREATE TABLE IF NOT EXISTS books (
     id INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
-    author TEXT NOT NULL,
-    lifeSpan TEXT,
+    author_id INTEGER NOT NULL REFERENCES authors(id),
     year INTEGER NOT NULL,
     isbn TEXT,
     pages INTEGER,
@@ -41,7 +52,7 @@ CREATE TABLE IF NOT EXISTS books (
     imageId TEXT,
     bookUrl TEXT,
     instances INTEGER NOT NULL DEFAULT 1,
-    UNIQUE (title, author)
+    UNIQUE (title, author_id)
 )
     """
     )
@@ -68,6 +79,15 @@ CREATE TABLE IF NOT EXISTS books (
 
                     goodreads = book.get("goodreads", {})
 
+                    (author_id,) = conn.execute(
+                        "INSERT INTO authors(libris_id, name, life_span) VALUES (?, ?, ?) ON CONFLICT DO UPDATE SET id=id RETURNING id",
+                        (
+                            book["authorId"],
+                            book["author"],
+                            book.get("lifeSpan", None),
+                        ),
+                    ).fetchone()
+
                     # If title with same author already exist, keep the oldest release
                     # If title with same author already exist,
                     # increase the number of instances for the work,
@@ -76,16 +96,15 @@ CREATE TABLE IF NOT EXISTS books (
                     # they are probably more popular
                     (book_id,) = conn.execute(
                         """
-                            INSERT INTO books(title, author, lifeSpan, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
+                            INSERT INTO books(title, author_id, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO
                             UPDATE
                             SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
                             RETURNING id
                         """,
                         (
                             book["title"],
-                            book["author"],
-                            book.get("lifeSpan", None),
+                            author_id,
                             year,
                             book.get("isbn", None),
                             goodreads.get("numPages", None),
