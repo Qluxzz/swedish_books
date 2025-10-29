@@ -2,7 +2,6 @@
  * Fetches books from Libris using their SPARQL endpoint
  * Tries to enhance data with data from goodreads using the ISBN or a combination of title and author
  */
-import https from "node:https"
 import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
 import { Goodreads, getDataFromGoodReads } from "./goodreads.ts"
@@ -155,55 +154,9 @@ sparqlQueue.addAll(
   }))
 )
 
-async function tryToFindImageForBook(work: string, url: string) {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        if (res.statusCode !== 200) {
-          res.resume() // drain stream to avoid leaks
-          return resolve(null)
-        }
-
-        let gotData = false
-
-        res.once("data", () => {
-          gotData = true
-          res.destroy() // stop reading
-          resolve({ work, url })
-        })
-
-        res.on("end", () => {
-          if (!gotData) resolve(null)
-        })
-
-        res.on("error", reject)
-      })
-      .on("error", reject)
-  })
-}
-
-function* getImageSources(book: Release) {
-  if (book.isbn) {
-    yield `https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/nielsen/isbn/${book.isbn}/${book.isbn}.jpg/orginal`
-    yield `https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/${book.isbn}}/${book.isbn}}.jpg/orginal`
-  }
-
-  // if (!book.workId.includes("node"))
-  //   yield `https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/tomasgift/libris-bib/${book.workId}/${book.workId}/orginal`
-}
-
 const goodReadsQueue = new PQueue({ concurrency: 20 })
-const bookCoverQueue = new PQueue({ concurrency: 1 })
 
 const parsedTitlesPerYear: { year: number; titles: Release[] }[] = []
-
-const bookCovers = new Map<string, string>()
-bookCoverQueue.on("completed", (data: { work: string; url: string } | null) => {
-  if (data) {
-    log(`Found book cover for ${data.work}`)
-    bookCovers.set(data.work, data.url)
-  }
-})
 
 sparqlQueue.on(
   "completed",
@@ -221,14 +174,6 @@ sparqlQueue.on(
           goodreads: data,
         }
       })
-    )
-
-    const urlsToCheck = titles.flatMap((book) =>
-      [...getImageSources(book)].map((url) => ({ work: book.workId, url }))
-    )
-
-    bookCoverQueue.addAll(
-      urlsToCheck.map((x) => () => tryToFindImageForBook(x.work, x.url))
     )
   }
 )
@@ -257,14 +202,7 @@ fileQueue.addAll(
       if (gData) {
         title.goodreads = gData
         withGoodreadsData++
-      } else {
       }
-
-      const coverUrl = bookCovers.get(title.workId)
-      if (coverUrl) {
-        console.log("We found a valid cover url!")
-      }
-
       return title
     })
 
