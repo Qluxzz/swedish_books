@@ -5,7 +5,7 @@
 import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
 import { Goodreads, getDataFromGoodReads } from "./goodreads.ts"
-import { isValidISBN, log, throwError } from "./helpers.js"
+import { isValidISBN, log, throwError } from "./helpers.ts"
 import PQueue from "p-queue"
 import {
   loadLibrisSPARQLSearchResults,

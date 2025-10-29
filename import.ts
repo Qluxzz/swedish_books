@@ -1,3 +1,7 @@
+/**
+ * After running fetch_original_swedish_books.ts, run this to convert that into an SQLite database
+ */
+
 import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
 import { Release } from "./release.ts"
