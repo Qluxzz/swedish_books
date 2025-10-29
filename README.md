@@ -14,4 +14,4 @@ This base book information is fetched from [Libris](https://libris.kb.se/), prov
 
 Libris provides a [SPARQL](https://en.wikipedia.org/wiki/SPARQL) [endpoint](https://libris.kb.se/sparql) which is used to fetch all original Swedish books that aren't translated.
 
-The info is enhanced with data from [Goodreads](https://www.goodreads.com/), which is where the ratings info
+The info is enhanced with data from [Goodreads](https://www.goodreads.com/), which is where the ratings info comes from.
