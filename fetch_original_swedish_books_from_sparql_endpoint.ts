@@ -2,7 +2,7 @@
  * Fetches books from Libris using their SPARQL endpoint
  * Tries to enhance data with data from goodreads using the ISBN or a combination of title and author
  */
-
+import https from "node:https"
 import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
 import { Goodreads, getDataFromGoodReads } from "./goodreads.ts"
@@ -13,34 +13,12 @@ import {
   SparqlResponse,
   Type,
 } from "./sparql.ts"
+import { Release } from "./release.ts"
 
 function makeSetsSerializable(_: string, value: any) {
   // Sets can not be stringified by default, so we need to convert it to a regular array first
   if (value instanceof Set) return [...value]
   return value
-}
-
-function hasGoodReadsData(items: object[]) {
-  return items.reduce((acc, x) => acc + ("goodreads" in x ? 1 : 0), 0)
-}
-
-interface Release {
-  /**
-   * The unique work id that all instances has as a parent
-   */
-  workId: string
-  title: string
-  authorId: string
-  author: string
-  lifeSpan?: string
-  isbn?: string
-  genres: Set<string>
-  /**
-   * This is the unique instance ids per work
-   * This can be used to fetch the image for the work, if we don't get it from Goodreads
-   */
-  instances: Set<string>
-  goodreads?: Goodreads
 }
 
 const UNWANTED_GENRES = new Set([
@@ -115,8 +93,16 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
                     `${x.givenName.value}${x.familyName.value}${x.lifeSpan?.value}`
                   )
 
-            valid.set(x.work.value, {
-              workId: x.work.value,
+            const workId =
+              x.work.type === Type.URI
+                ? x.work.value.split("/").pop()?.split("#").at(0) ??
+                  throwError(
+                    `${x.work.value} could not be converted to a work id!`
+                  )
+                : x.work.value
+
+            valid.set(workId, {
+              workId,
               title: x.title.value,
               authorId,
               author: `${x.givenName.value} ${x.familyName.value}`,
@@ -169,9 +155,55 @@ sparqlQueue.addAll(
   }))
 )
 
+async function tryToFindImageForBook(work: string, url: string) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        if (res.statusCode !== 200) {
+          res.resume() // drain stream to avoid leaks
+          return resolve(null)
+        }
+
+        let gotData = false
+
+        res.once("data", () => {
+          gotData = true
+          res.destroy() // stop reading
+          resolve({ work, url })
+        })
+
+        res.on("end", () => {
+          if (!gotData) resolve(null)
+        })
+
+        res.on("error", reject)
+      })
+      .on("error", reject)
+  })
+}
+
+function* getImageSources(book: Release) {
+  if (book.isbn) {
+    yield `https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/nielsen/isbn/${book.isbn}/${book.isbn}.jpg/orginal`
+    yield `https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/${book.isbn}}/${book.isbn}}.jpg/orginal`
+  }
+
+  // if (!book.workId.includes("node"))
+  //   yield `https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/tomasgift/libris-bib/${book.workId}/${book.workId}/orginal`
+}
+
 const goodReadsQueue = new PQueue({ concurrency: 20 })
+const bookCoverQueue = new PQueue({ concurrency: 1 })
 
 const parsedTitlesPerYear: { year: number; titles: Release[] }[] = []
+
+const bookCovers = new Map<string, string>()
+bookCoverQueue.on("completed", (data: { work: string; url: string } | null) => {
+  if (data) {
+    log(`Found book cover for ${data.work}`)
+    bookCovers.set(data.work, data.url)
+  }
+})
 
 sparqlQueue.on(
   "completed",
@@ -190,6 +222,14 @@ sparqlQueue.on(
         }
       })
     )
+
+    const urlsToCheck = titles.flatMap((book) =>
+      [...getImageSources(book)].map((url) => ({ work: book.workId, url }))
+    )
+
+    bookCoverQueue.addAll(
+      urlsToCheck.map((x) => () => tryToFindImageForBook(x.work, x.url))
+    )
   }
 )
 
@@ -205,6 +245,8 @@ await sparqlQueue.onIdle()
 log("All sparqle requests are done!")
 await goodReadsQueue.onIdle()
 log("All goodreads requests are done!")
+await bookCoverQueue.onIdle()
+log("All image requests are done!")
 
 const fileQueue = new PQueue({ concurrency: 20 })
 fileQueue.addAll(
@@ -215,7 +257,14 @@ fileQueue.addAll(
       if (gData) {
         title.goodreads = gData
         withGoodreadsData++
+      } else {
       }
+
+      const coverUrl = bookCovers.get(title.workId)
+      if (coverUrl) {
+        console.log("We found a valid cover url!")
+      }
+
       return title
     })
 
