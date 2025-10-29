@@ -1,0 +1,139 @@
+import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
+import Database from "better-sqlite3"
+import { Release } from "./release.ts"
+import { throwError } from "./helpers.ts"
+
+const DATABASE_FILE = "./books9.db"
+const JSON_FOLDER = "json"
+
+if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
+
+const db = new Database(DATABASE_FILE)
+db.pragma("journal_mode = WAL")
+db.pragma("synchronous = OFF")
+db.pragma("temp_store = MEMORY")
+db.pragma("cache_size = 100000")
+
+db.exec(`
+CREATE TABLE genres (
+  id INTEGER PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE authors (
+  id INTEGER PRIMARY KEY,
+  libris_id TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  life_span TEXT
+);
+
+CREATE TABLE books (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  author_id INTEGER NOT NULL REFERENCES authors(id),
+  year INTEGER NOT NULL,
+  isbn TEXT,
+  pages INTEGER,
+  avgRating INTEGER,
+  ratings INTEGER,
+  imageId TEXT,
+  bookUrl TEXT,
+  instances INTEGER NOT NULL DEFAULT 1,
+  UNIQUE (title, author_id)
+);
+
+CREATE TABLE book_genre (
+  book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+  genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
+  PRIMARY KEY (book_id, genre_id)
+);
+`)
+
+const insertAuthor = db.prepare(
+  "INSERT OR IGNORE INTO authors (libris_id, name, life_span) VALUES (?, ?, ?)"
+)
+const getAuthorId = db.prepare<unknown[], { id: number }>(
+  "SELECT id FROM authors WHERE libris_id = ?"
+)
+
+const insertBook = db.prepare<unknown[], { id: number }>(`
+  INSERT INTO books(title, author_id, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(title, author_id)
+  DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
+  RETURNING id
+`)
+
+const insertGenre = db.prepare("INSERT OR IGNORE INTO genres(name) VALUES(?)")
+const getGenreId = db.prepare<unknown[], { id: number }>(
+  "SELECT id FROM genres WHERE name = ?"
+)
+const insertBookGenre = db.prepare(
+  "INSERT OR IGNORE INTO book_genre(book_id, genre_id) VALUES (?, ?)"
+)
+
+const currentYear = new Date().getFullYear()
+const yearRegex = /\d{4}/g
+
+function isAuthorAlive(lifeSpan: string): boolean {
+  const matches = lifeSpan.match(yearRegex)
+  // There was only a single four digit year in the lifespan field
+  // We assume this is the birth year (this is not always true)
+  if (matches?.length === 1) {
+    const birth = parseInt(matches[0], 10)
+    // We add 100 years to the birth year
+    // if that's greater than the current year
+    // we count that as them still being alive, since we have no more info
+    return birth + 100 > currentYear
+  }
+  return false
+}
+
+function getImageId(url?: string): string | null {
+  if (!url || url.includes("nophoto/book/111x148")) return null
+  return url.split("/").slice(-2).join("/").split(".")[0] || null
+}
+
+const importAll = db.transaction(() => {
+  const files = readdirSync(JSON_FOLDER, { recursive: true })
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue
+    const year = parseInt(file.split(".")[0], 10)
+    const fullPath = `${JSON_FOLDER}/${file}`
+    const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
+
+    for (const book of books) {
+      if (book.lifeSpan && isAuthorAlive(book.lifeSpan)) continue
+
+      insertAuthor.run(book.authorId, book.author, book.lifeSpan ?? null)
+      const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
+      if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
+
+      const { id: bookId } = insertBook.get(
+        book.title,
+        authorId,
+        year,
+        book.isbn ?? null,
+        book.goodreads?.numPages ?? null,
+        book.goodreads?.avgRating ?? null,
+        book.goodreads?.ratingsCount ?? null,
+        book.goodreads?.bookUrl ?? null,
+        getImageId(book.goodreads?.imageUrl)
+      ) ?? { id: null }
+      if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
+
+      for (const genre of book.genres) {
+        insertGenre.run(genre)
+        const { id: genreId } =
+          getGenreId.get(genre) ?? throwError("Expected to get a genre id")
+        insertBookGenre.run(bookId, genreId)
+      }
+    }
+  }
+})
+
+console.time("Import time")
+importAll()
+console.timeEnd("Import time")
+
+db.close()
