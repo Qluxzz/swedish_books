@@ -1,5 +1,6 @@
-module Book exposing (Book, decode, view)
+module Book exposing (Book, decode, lifeSpanView, view)
 
+import Head.Seo exposing (book)
 import Html
 import Html.Attributes
 import Json.Decode
@@ -14,10 +15,14 @@ type Book
 
 type alias Model =
     { title : String
-    , author : String
+    , author : Author
     , year : Int
-    , lifeSpan : Maybe String
+    , isbn : Maybe String
     }
+
+
+type alias Author =
+    { id : Int, name : String, lifeSpan : Maybe String }
 
 
 type alias Rating =
@@ -31,20 +36,30 @@ type alias Rating =
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\title author year lifeSpan avgRating ratings bookUrl imageId ->
+        (\title authorId authorName lifeSpan year isbn avgRating ratings bookUrl imageId ->
+            let
+                author : Author
+                author =
+                    { id = authorId, name = authorName, lifeSpan = lifeSpan }
+
+                model =
+                    Model title author year isbn
+            in
             Maybe.map3
                 (\avg r bUrl ->
-                    Rated (Model title author year lifeSpan) (Rating avg r bUrl imageId)
+                    Rated model (Rating avg r bUrl imageId)
                 )
                 avgRating
                 ratings
                 bookUrl
-                |> Maybe.withDefault (Unrated (Model title author year lifeSpan))
+                |> Maybe.withDefault (Unrated model)
         )
         |> Serializer.Json.Extra.andMap (Json.Decode.field "title" Json.Decode.string)
+        |> Serializer.Json.Extra.andMap (Json.Decode.field "author_id" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author" Json.Decode.string)
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "life_span" Json.Decode.string))
         |> Serializer.Json.Extra.andMap (Json.Decode.field "year" Json.Decode.int)
-        |> Serializer.Json.Extra.andMap (Json.Decode.field "lifeSpan" (Json.Decode.maybe Json.Decode.string))
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "isbn" Json.Decode.string))
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "avgRating" Json.Decode.float))
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "ratings" Json.Decode.int))
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "bookUrl" Json.Decode.string))
@@ -53,21 +68,47 @@ decode =
 
 view : Bool -> Book -> Html.Html msg
 view linkToYear book =
+    let
+        url =
+            case book of
+                Rated _ r ->
+                    "https://www.goodreads.com" ++ r.bookUrl
+
+                Unrated b ->
+                    "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ b.title ++ " " ++ b.author.name ++ "&d=libris&f=simp&spell=true"
+
+        image =
+            case book of
+                Rated b r ->
+                    case r.imageId of
+                        Just iId ->
+                            [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ iId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+
+                        Nothing ->
+                            case b.isbn of
+                                Just isbn ->
+                                    [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+
+                                Nothing ->
+                                    []
+
+                Unrated b ->
+                    case b.isbn of
+                        Just isbn ->
+                            [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+
+                        Nothing ->
+                            []
+    in
     case book of
         Rated b r ->
             Html.article [ Html.Attributes.class "book-card" ]
                 [ Html.div [ Html.Attributes.class "book-cover " ]
-                    (case r.imageId of
-                        Just iId ->
-                            [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ iId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
-
-                        Nothing ->
-                            []
-                    )
+                    image
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
-                        [ Html.a [ Html.Attributes.href <| "https://www.goodreads.com" ++ r.bookUrl, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
-                        , bookAuthor b
+                        [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
+                        , bookAuthor b.author
                         ]
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
@@ -82,10 +123,12 @@ view linkToYear book =
 
         Unrated b ->
             Html.article [ Html.Attributes.class "book-card" ]
-                [ Html.div [ Html.Attributes.class "book-info" ]
+                [ Html.div [ Html.Attributes.class "book-cover " ]
+                    image
+                , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
-                        [ Html.a [ Html.Attributes.href <| "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ b.title ++ " " ++ b.author ++ "&d=libris&f=simp&spell=true" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
-                    , bookAuthor b
+                        [ Html.a [ Html.Attributes.href url ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
+                    , bookAuthor b.author
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
                         [ yearView b.year linkToYear ]
@@ -93,9 +136,9 @@ view linkToYear book =
                 ]
 
 
-bookAuthor : Model -> Html.Html msg
-bookAuthor { author, lifeSpan } =
-    Html.p [ Html.Attributes.class "book-author" ] [ Html.text <| ([ Just author, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ") ]
+bookAuthor : Author -> Html.Html msg
+bookAuthor { id, name, lifeSpan } =
+    Html.a [ Html.Attributes.href (Route.toString (Route.Author__Id_ { id = String.fromInt id })), Html.Attributes.class "book-author" ] [ Html.text <| ([ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ") ]
 
 
 lifeSpanView : Maybe String -> Maybe String

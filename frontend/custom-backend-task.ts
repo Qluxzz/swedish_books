@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite"
+import { throwError } from "../helpers.ts"
 
 const ranked = `
 ranked AS (
@@ -18,33 +19,30 @@ ranked AS (
 const filterPopularAuthors = `
 popularity AS (
   SELECT 
-    author,
-    lifeSpan,
+    author_id,
     pct
   FROM (
     SELECT
-      author,
-      lifeSpan,
+      author_id,
       PERCENT_RANK() OVER (ORDER BY SUM(instances) ASC) AS pct
-    FROM books GROUP BY author, lifeSpan
+    FROM books GROUP BY author_id
   ) WHERE pct < 0.955
 )`
 
-const database = new DatabaseSync("../books7.db", {
+const database = new DatabaseSync("../books9.db", {
   readOnly: true,
 })
 
 export async function getRatedTitles() {
-  console.log("Get titles")
-
   const result = database
     .prepare(
       `
 WITH ${ranked}, ${filterPopularAuthors}
 SELECT
   b.title,
-  b.author,
-  b.lifeSpan,
+  a.id author_id,
+  a.name author,
+  a.life_span,
   b.year,
   b.isbn,
   b.avgRating,
@@ -53,10 +51,11 @@ SELECT
   b.imageId
 FROM books b
 INNER JOIN popularity p
-  ON p.author = b.author
-  AND p.lifeSpan = b.lifeSpan
+  ON p.author_id = b.author_id
 INNER JOIN ranked r
   ON r.id = b.id
+INNER JOIN authors a
+  ON a.id = b.author_id
 ORDER BY (ratings * avgRating) DESC
 LIMIT 24;
     `
@@ -73,13 +72,16 @@ export async function getUnratedTitles() {
 WITH ${filterPopularAuthors}
 SELECT
   b.title,
-  b.author,
-  b.lifeSpan,
-  b.year
+  a.id author_id,
+  a.name author,
+  a.life_span,
+  b.year,
+  b.isbn
 FROM books b
 INNER JOIN popularity p
-  ON p.author = b.author
-  AND p.lifeSpan = b.lifeSpan
+  ON p.author_id = b.author_id
+INNER JOIN authors a
+  ON a.id = b.author_id
 WHERE b.ratings IS NULL
 ORDER BY p.pct DESC, RANDOM()
 LIMIT 24
@@ -97,8 +99,9 @@ export async function getTitlesForYear(year: string) {
 WITH ${ranked}, ${filterPopularAuthors}
 SELECT
   b.title,
-  b.author,
-  b.lifeSpan,
+  a.id author_id,
+  a.name author,
+  a.life_span,
   b.year,
   b.isbn,
   b.avgRating,
@@ -109,8 +112,9 @@ FROM books b
 INNER JOIN ranked r
   ON b.id = r.id
 INNER JOIN popularity p
-  ON p.author = b.author
-  AND p.lifeSpan = b.lifeSpan
+  ON p.author_id = b.author_id
+INNER JOIN authors a
+  ON a.id = b.author_id
 WHERE 
   b.year = ?
 ORDER BY (b.ratings * b.avgRating) DESC
@@ -124,13 +128,16 @@ ORDER BY (b.ratings * b.avgRating) DESC
 WITH ${filterPopularAuthors}
 SELECT
   b.title,
-  b.author,
-  b.lifeSpan,
-  b.year
+  a.id author_id,
+  a.name author,
+  a.life_span,
+  b.year,
+  b.isbn
 FROM books b
 INNER JOIN popularity p
-  ON p.author = b.author
-  AND p.lifeSpan = b.lifeSpan
+  ON p.author_id = b.author_id
+INNER JOIN authors a
+  ON a.id = b.author_id
 WHERE (b.ratings IS NULL OR b.ratings = 0) AND b.year = ?
 ORDER BY p.pct DESC, RANDOM()
     `
@@ -156,8 +163,7 @@ FROM books b
 INNER JOIN ranked r
   ON b.id = r.id
 INNER JOIN popularity p
-  ON p.author = b.author
-  AND p.lifeSpan = b.lifeSpan
+  ON p.author_id = b.author_id
 GROUP BY b.year
 UNION ALL
 SELECT
@@ -165,8 +171,7 @@ SELECT
   COUNT(*) count
 FROM books b
 INNER JOIN popularity p
-  ON p.author = b.author
-  AND p.lifeSpan = b.lifeSpan
+  ON p.author_id = b.author_id
 WHERE b.ratings IS NULL OR b.ratings = 0
 GROUP BY b.year
 )
@@ -178,4 +183,43 @@ GROUP BY year
       acc[row.year] = row.amount
       return acc
     }, {})
+}
+
+export function getAuthorsWithMultipleTitles() {
+  return database
+    .prepare(
+      "SELECT author_id FROM books GROUP BY author_id HAVING COUNT(*) > 1"
+    )
+    .all()
+    .map((x) => x.author_id)
+}
+
+export function getTitlesForAuthor(authorId: string) {
+  const authorInfo =
+    database
+      .prepare("SELECT name, life_span FROM authors WHERE id = ?")
+      .all(authorId)
+      .at(0) ?? throwError("Should be at least one row!")
+
+  const titles = database
+    .prepare(
+      `
+SELECT b.title,
+  a.id author_id,
+  a.name author,
+  a.life_span,
+  b.year,
+  b.isbn,
+  b.avgRating,
+  b.ratings,
+  b.bookUrl,
+  b.imageId 
+FROM books b INNER JOIN authors a ON b.author_id = a.id WHERE author_id = ? ORDER BY year DESC`
+    )
+    .all(authorId)
+
+  return {
+    author: authorInfo,
+    titles: titles,
+  }
 }
