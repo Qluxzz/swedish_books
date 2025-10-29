@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
-import Database from "better-sqlite3"
+import { DatabaseSync } from "node:sqlite"
 import { Release } from "./release.ts"
 import { throwError } from "./helpers.ts"
 
@@ -8,11 +8,7 @@ const JSON_FOLDER = "json"
 
 if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
 
-const db = new Database(DATABASE_FILE)
-db.pragma("journal_mode = WAL")
-db.pragma("synchronous = OFF")
-db.pragma("temp_store = MEMORY")
-db.pragma("cache_size = 100000")
+const db = new DatabaseSync(DATABASE_FILE)
 
 db.exec(`
 CREATE TABLE genres (
@@ -52,11 +48,9 @@ CREATE TABLE book_genre (
 const insertAuthor = db.prepare(
   "INSERT OR IGNORE INTO authors (libris_id, name, life_span) VALUES (?, ?, ?)"
 )
-const getAuthorId = db.prepare<unknown[], { id: number }>(
-  "SELECT id FROM authors WHERE libris_id = ?"
-)
+const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
-const insertBook = db.prepare<unknown[], { id: number }>(`
+const insertBook = db.prepare(`
   INSERT INTO books(title, author_id, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(title, author_id)
@@ -65,9 +59,7 @@ const insertBook = db.prepare<unknown[], { id: number }>(`
 `)
 
 const insertGenre = db.prepare("INSERT OR IGNORE INTO genres(name) VALUES(?)")
-const getGenreId = db.prepare<unknown[], { id: number }>(
-  "SELECT id FROM genres WHERE name = ?"
-)
+const getGenreId = db.prepare("SELECT id FROM genres WHERE name = ?")
 const insertBookGenre = db.prepare(
   "INSERT OR IGNORE INTO book_genre(book_id, genre_id) VALUES (?, ?)"
 )
@@ -94,46 +86,45 @@ function getImageId(url?: string): string | null {
   return url.split("/").slice(-2).join("/").split(".")[0] || null
 }
 
-const importAll = db.transaction(() => {
-  const files = readdirSync(JSON_FOLDER, { recursive: true })
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue
-    const year = parseInt(file.split(".")[0], 10)
-    const fullPath = `${JSON_FOLDER}/${file}`
-    const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
-
-    for (const book of books) {
-      if (book.lifeSpan && isAuthorAlive(book.lifeSpan)) continue
-
-      insertAuthor.run(book.authorId, book.author, book.lifeSpan ?? null)
-      const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
-      if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
-
-      const { id: bookId } = insertBook.get(
-        book.title,
-        authorId,
-        year,
-        book.isbn ?? null,
-        book.goodreads?.numPages ?? null,
-        book.goodreads?.avgRating ?? null,
-        book.goodreads?.ratingsCount ?? null,
-        book.goodreads?.bookUrl ?? null,
-        getImageId(book.goodreads?.imageUrl)
-      ) ?? { id: null }
-      if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
-
-      for (const genre of book.genres) {
-        insertGenre.run(genre)
-        const { id: genreId } =
-          getGenreId.get(genre) ?? throwError("Expected to get a genre id")
-        insertBookGenre.run(bookId, genreId)
-      }
-    }
-  }
-})
+const files = readdirSync(JSON_FOLDER, { recursive: true })
 
 console.time("Import time")
-importAll()
+db.prepare("BEGIN").run()
+for (const file of files) {
+  if (!file.endsWith(".json")) continue
+  const year = Number.parseInt(file.split(".")[0])
+  const fullPath = `${JSON_FOLDER}/${file}`
+  const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
+
+  for (const book of books) {
+    if (book.lifeSpan && isAuthorAlive(book.lifeSpan)) continue
+
+    insertAuthor.run(book.authorId, book.author, book.lifeSpan ?? null)
+    const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
+    if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
+
+    const { id: bookId } = insertBook.get(
+      book.title,
+      authorId,
+      year,
+      book.isbn ?? null,
+      book.goodreads?.numPages ?? null,
+      book.goodreads?.avgRating ?? null,
+      book.goodreads?.ratingsCount ?? null,
+      book.goodreads?.bookUrl ?? null,
+      getImageId(book.goodreads?.imageUrl)
+    ) ?? { id: null }
+    if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
+
+    for (const genre of book.genres) {
+      insertGenre.run(genre)
+      const { id: genreId } =
+        getGenreId.get(genre) ?? throwError("Expected to get a genre id")
+      insertBookGenre.run(bookId, genreId)
+    }
+  }
+}
+db.prepare("COMMIT").run()
 console.timeEnd("Import time")
 
 db.close()

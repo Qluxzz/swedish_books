@@ -1,8 +1,7 @@
-import pLimit from "p-limit"
-import { getFileOrDownload } from "./helpers.js"
+import { getFileOrDownload } from "./helpers.ts"
 import slugify from "slugify"
 
-export interface Goodreads {
+interface Goodreads {
   imageUrl: string
   bookId: string
   workId: string
@@ -83,4 +82,4 @@ async function getDataFromGoodReads<
     : await getByTitleAndAuthor(book.title, book.author)
 }
 
-export { getDataFromGoodReads }
+export { type Goodreads, getDataFromGoodReads }
