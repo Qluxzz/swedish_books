@@ -101,7 +101,7 @@ for (const file of files) {
   const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
 
   for (const book of books) {
-    if (book.lifeSpan && isAuthorAlive(book.lifeSpan)) continue
+    if (!book.lifeSpan || isAuthorAlive(book.lifeSpan)) continue
 
     insertAuthor.run(book.authorId, book.author, book.lifeSpan ?? null)
     const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
