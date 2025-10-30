@@ -5,7 +5,12 @@ const FORMAT = "application/sparql-results+json"
 
 const BASE_URL =
   "https://libris.kb.se/sparql?format=FORMAT&should-sponge=soft&query=QUERY"
-const QUERY = (await readFile("./query.rq")).toString()
+const QUERY = (await readFile("../query.rq"))
+  .toString()
+  // Remove all comments from query
+  .replaceAll(/^.*#.*$\n?/gm, "")
+
+console.log(QUERY)
 
 async function loadLibrisSPARQLSearchResults(
   year: number
@@ -35,8 +40,10 @@ export interface Results {
   distinct: boolean
   ordered: boolean
   bindings: {
-    work: Value
     instance: Value
+    work: Value
+    bib?: Value
+    imageHost?: Value
     title: Value
     author: Value
     givenName: Value

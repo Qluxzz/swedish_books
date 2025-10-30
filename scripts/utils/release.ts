@@ -9,14 +9,19 @@ interface Release {
   authorId: string
   author: string
   lifeSpan?: string
-  isbn?: string
   genres: Set<string>
   /**
-   * This is the unique instance ids per work
-   * This can be used to fetch the image for the work, if we don't get it from Goodreads
+   * These are all found instances of a work, this is usually re-pressings and new editions
    */
-  instances: Set<string>
+  instances: Set<Instance>
   goodreads?: Goodreads
 }
 
-export type { Release }
+interface Instance {
+  id: string
+  bib?: string
+  imageHost?: string
+  isbn?: string
+}
+
+export type { Release, Instance }

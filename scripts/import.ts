@@ -5,11 +5,11 @@
 import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
 import { Release } from "./utils/release.ts"
-import { throwError } from "./utils/helpers.ts"
+import { getIdentifier, throwError } from "./utils/helpers.ts"
 import slugify from "slugify"
 
 const DATABASE_FILE = "./books.db"
-const JSON_FOLDER = "json"
+const JSON_FOLDER = "cache/json"
 
 if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
 
@@ -20,7 +20,9 @@ CREATE TABLE genres (
   id INTEGER PRIMARY KEY,
   name TEXT UNIQUE NOT NULL
 );
+`)
 
+db.exec(`
 CREATE TABLE authors (
   id INTEGER PRIMARY KEY,
   libris_id TEXT UNIQUE NOT NULL,
@@ -28,22 +30,42 @@ CREATE TABLE authors (
   slug TEXT NOT NULL,
   life_span TEXT
 );
+`)
 
+db.exec(`
 CREATE TABLE books (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
-  author_id INTEGER NOT NULL REFERENCES authors(id),
+  author_id INTEGER NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
   isbn TEXT,
-  pages INTEGER,
-  avgRating INTEGER,
-  ratings INTEGER,
-  imageId TEXT,
-  bookUrl TEXT,
   instances INTEGER NOT NULL DEFAULT 1,
   UNIQUE (title, author_id)
 );
+`)
 
+db.exec(`
+CREATE TABLE book_covers (
+  id INTEGER PRIMARY KEY,
+  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  host TEXT NOT NULL,
+  image_id TEXT NOT NULL
+);
+`)
+
+db.exec(`
+CREATE TABLE goodreads (
+  id INTEGER PRIMARY KEY,
+  book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+  pages INTEGER,
+  avg_rating INTEGER NOT NULL,
+  ratings INTEGER NOT NULL,
+  image_id TEXT,
+  book_url TEXT NOT NULL
+);
+`)
+
+db.exec(`
 CREATE TABLE book_genre (
   book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
   genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
@@ -57,8 +79,8 @@ const insertAuthor = db.prepare(
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
 const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year, isbn, pages, avgRating, ratings, bookUrl, imageId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO books(title, author_id, year, isbn)
+  VALUES (?, ?, ?, ?)
   ON CONFLICT(title, author_id)
   DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
   RETURNING id
@@ -68,6 +90,14 @@ const insertGenre = db.prepare("INSERT OR IGNORE INTO genres(name) VALUES(?)")
 const getGenreId = db.prepare("SELECT id FROM genres WHERE name = ?")
 const insertBookGenre = db.prepare(
   "INSERT OR IGNORE INTO book_genre(book_id, genre_id) VALUES (?, ?)"
+)
+
+const insertGoodreadsData = db.prepare(
+  "INSERT INTO goodreads(book_id, pages, avg_rating, ratings, image_id, book_url) VALUES (?, ?, ?, ?, ?, ?)"
+)
+
+const insertBookCoverImage = db.prepare(
+  "INSERT INTO book_covers (book_id, host, image_id) VALUES (?, ?, ?)"
 )
 
 const currentYear = new Date().getFullYear()
@@ -115,18 +145,89 @@ for (const file of files) {
     const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
     if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
 
-    const { id: bookId } = insertBook.get(
-      book.title,
-      authorId,
-      year,
-      book.isbn ?? null,
-      book.goodreads?.numPages ?? null,
-      book.goodreads?.avgRating ?? null,
-      book.goodreads?.ratingsCount ?? null,
-      book.goodreads?.bookUrl ?? null,
-      getImageId(book.goodreads?.imageUrl)
-    ) ?? { id: null }
+    const { id: bookId } = insertBook.get(book.title, authorId, year) ?? {
+      id: null,
+    }
     if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
+
+    for (const instance of book.instances) {
+      const data = (() => {
+        if (!instance.imageHost) return null
+
+        const host =
+          instance.imageHost.split("/").pop() ??
+          throwError("Failed to get image host")
+
+        switch (host) {
+          case "tomasgift":
+            if (!instance.bib)
+              throw new Error(
+                "Image requires a bib, but instance doesn't have any!"
+              )
+            return { host: host, id: getIdentifier(instance.bib) }
+          case "author":
+            return {
+              host: host,
+              id:
+                instance.isbn ??
+                getIdentifier(instance.id) ??
+                throwError(
+                  `Instance ${
+                    instance.id
+                  } did not have an ISBN, and we couldn't parse the id, for book ${JSON.stringify(
+                    book
+                  )}`
+                ),
+            }
+
+          case "bokrondellen":
+          case "librisse":
+          case "digi":
+            if (!instance.isbn)
+              throw new Error(
+                `Image host "${host}" requires ISBN, but instance doesn't have any! ${JSON.stringify(
+                  book
+                )}`
+              )
+            return { host: host, id: instance.isbn }
+
+          case "nielsen":
+            // Not sure about this, using isbn returns a different title when tested
+            return null
+
+          case "sesam":
+            // Example id, no way to find it in the existing data
+            // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/sesam/isbn/9189144325/I_364572_20061019105257.jpg/orginal
+            return null
+
+          case "libris":
+            // Example id, no way to find it in the existing data
+            // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/libris/libris-bib/7650115/91-7588-130-6B.jpg/orginal
+            return null
+
+          default:
+            throw new Error(
+              `Unknown image host: ${instance.imageHost}. ${JSON.stringify(
+                book
+              )}`
+            )
+        }
+      })()
+
+      if (data) insertBookCoverImage.run(bookId, data.host, data.id)
+    }
+
+    // Insert goodreads data if exists
+    if (book.goodreads) {
+      insertGoodreadsData.run(
+        bookId,
+        book.goodreads.numPages,
+        book.goodreads.avgRating,
+        book.goodreads.ratingsCount,
+        getImageId(book.goodreads.imageUrl),
+        book.goodreads.bookUrl
+      )
+    }
 
     for (const genre of book.genres) {
       insertGenre.run(genre)

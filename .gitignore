@@ -1,8 +1,6 @@
 node_modules
 # Files are cached after downloading so we don't hit the endpoint every time
-json*/
-html*/
-goodreads/
+cache
 
 # Elm pages
 node_modules/

@@ -5,14 +5,14 @@
 import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
 import { Goodreads, getDataFromGoodReads } from "./utils/goodreads.ts"
-import { isValidISBN, log, throwError } from "./utils/helpers.ts"
+import { getIdentifier, isValidISBN, log, throwError } from "./utils/helpers.ts"
 import PQueue from "p-queue"
 import {
   loadLibrisSPARQLSearchResults,
   SparqlResponse,
   Type,
 } from "./utils/sparql.ts"
-import { Release } from "./utils/release.ts"
+import { Instance, Release } from "./utils/release.ts"
 
 // CONFIGURATION
 
@@ -73,15 +73,18 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
         const existing = valid.get(x.work.value)
         if (existing) {
           existing.genres.add(x.genre.value)
-          existing.instances.add(x.instance.value)
+          existing.instances.add({
+            id: x.instance.value,
+            bib: x.bib?.value,
+            imageHost: x.imageHost?.value,
+            isbn: x.isbn?.value,
+          })
         } else {
           const authorId =
             // Best case, we have an URI for the author and we use that as the id
             x.author.type === Type.URI
-              ? x.author.value.split("/").pop()?.split("#").at(0) ??
-                throwError(
-                  `${x.author.value} could not be converted to just an author id!`
-                )
+              ? getIdentifier(x.author.value) ??
+                throwError(`${x.author.value} dould not be converted to an id`)
               : // Otherwise we use the ISNI if available
                 // And in last case we hash together the name and lifespan of the author
                 x.isni?.value ??
@@ -92,10 +95,8 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
 
           const workId =
             x.work.type === Type.URI
-              ? x.work.value.split("/").pop()?.split("#").at(0) ??
-                throwError(
-                  `${x.work.value} could not be converted to a work id!`
-                )
+              ? getIdentifier(x.work.value) ??
+                throwError(`${x.work.value} dould not be converted to an id`)
               : x.work.value
 
           valid.set(workId, {
@@ -105,8 +106,14 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
             author: `${x.givenName.value} ${x.familyName.value}`,
             lifeSpan: x.lifeSpan?.value,
             genres: new Set<string>([x.genre.value]),
-            isbn: x.isbn?.value,
-            instances: new Set<string>([x.instance.value]),
+            instances: new Set<Instance>([
+              {
+                id: x.instance.value,
+                bib: x.bib?.value,
+                imageHost: x.imageHost?.value,
+                isbn: x.isbn?.value,
+              },
+            ]),
           })
         }
 
@@ -116,18 +123,20 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
     )
     .valid.values()
     .map((x) => {
-      // Ignore books with an invalid ISBN
-      if (x.isbn) {
-        const { result, normalized } = isValidISBN(x.isbn)
+      // Clear isbn if invalid
+      for (const instance of x.instances) {
+        if (instance.isbn) {
+          const { result, normalized } = isValidISBN(instance.isbn)
 
-        if (!result) {
-          console.error(
-            `Book ${x.title} by ${x.author} had an invalid ISBN (${x.isbn}) `
-          )
+          if (!result) {
+            console.error(
+              `Book instance ${instance.id} of ${x.title} by ${x.author} had an invalid ISBN (${instance.isbn}) `
+            )
 
-          x.isbn = undefined
-        } else {
-          x.isbn = normalized
+            instance.isbn = undefined
+          } else {
+            instance.isbn = normalized
+          }
         }
       }
 
@@ -155,6 +164,7 @@ sparqlQueue.addAll(
 )
 
 const parsedTitlesPerYear: { year: number; titles: Release[] }[] = []
+
 sparqlQueue.on(
   "completed",
   ({ year, data }: { year: number; data: SparqlResponse }) => {
@@ -207,7 +217,7 @@ fileQueue.addAll(
 
     if (enhanced.length !== 0)
       await writeFile(
-        `json/${year}.json`,
+        `cache/json/${year}.json`,
         JSON.stringify(enhanced, makeSetsSerializable, 2)
       )
   })

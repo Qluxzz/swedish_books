@@ -32,6 +32,8 @@ async function getFileOrDownload(
   fileName: string,
   url: string
 ): Promise<string> {
+  fileName = `cache/${fileName}`
+
   try {
     const disk = await fs.readFile(fileName)
     // console.info(`Using cached file ${fileName}`)
@@ -132,6 +134,14 @@ function isValidISBN(isbn: string): { result: boolean; normalized: string } {
   return { result: false, normalized: clean }
 }
 
+/**
+ * Returns the unique id from an identifier URI
+ * @param id an id that looks like this https://libris.kb.se/zcmbzbh3wgxvd2lq#it
+ */
+function getIdentifier(id: string): string | null {
+  return id.split("/").pop()?.split("#").at(0) ?? null
+}
+
 export {
   chunk,
   ensureSuccessStatusCode,
@@ -140,4 +150,5 @@ export {
   throwError,
   log,
   isValidISBN,
+  getIdentifier,
 }
