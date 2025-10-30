@@ -5,17 +5,20 @@ PREFIX saogf: <https://id.kb.se/term/saogf/>
 PREFIX country: <https://id.kb.se/country/>
 PREFIX nat: <https://id.kb.se/nationality/>
 
-SELECT DISTINCT 
-  ?instance ?work ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?genre
+SELECT
+  ?instance ?work ?bib ?imageHost ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?genre
 {
   ?instance a ?type ;
     :instanceOf ?work ;
     :hasTitle [ :mainTitle ?title ] ;
     :publication [ :year ?year ; :country country:sw ] .
   OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
-
+  # Fetch cover image if it exists
+  # We need the publisher, which is the image host, to know what URL are available for this work
+  OPTIONAL { ?instance :image [ a :ImageObject ; :publisher ?imageHost ] }
+  OPTIONAL { ?instance :sameAs ?bib }
   FILTER(?type IN (:Instance, :Print))
-  FILTER(STR(?year) = "|YEAR|")
+  FILTER(?year = "|YEAR|")
 
   # Fetch the unique work that this instance is of
   ?work a ?workType ;
@@ -49,10 +52,10 @@ SELECT DISTINCT
   }
 
   # Get author information
-  ?author :givenName ?givenName ; 
+  ?author :givenName ?givenName ;
           :familyName ?familyName ;
           # Must be a swedish author
-          :nationality nat:e-sw--- 
+          :nationality nat:e-sw---
   OPTIONAL { ?author :lifeSpan ?lifeSpan }
   OPTIONAL { ?author :identifiedBy [ a :ISNI ; :value ?isni ]}
 }
