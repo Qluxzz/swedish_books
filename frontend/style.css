@@ -65,6 +65,10 @@ main {
 
 /* Header */
 header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
   background-color: var(--color-muted);
   padding: var(--spacing-8);
 
@@ -239,4 +243,12 @@ footer {
   font-size: 0.875rem;
 
   color: var(--color-muted-foreground);
+}
+
+a.back {
+  text-decoration: none;
+
+  img {
+    width: 25px;
+  }
 }

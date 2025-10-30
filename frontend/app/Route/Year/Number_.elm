@@ -73,7 +73,7 @@ view :
 view app shared =
     { title = "Böcker för år " ++ app.routeParams.number
     , body =
-        BookList.view False app.data.ratedBooks app.data.unratedBooks
+        BookList.view { linkToYear = False, linkToAuthor = True } app.data.ratedBooks app.data.unratedBooks
     }
 
 

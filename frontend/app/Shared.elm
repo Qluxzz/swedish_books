@@ -91,6 +91,11 @@ data =
         |> BackendTask.map (\dict -> { worksPerYear = dict })
 
 
+linkToHomePage : Html msg
+linkToHomePage =
+    Html.a [ Html.Attributes.class "back", Html.Attributes.href (Route.toString Route.Index) ] [ Html.img [ Html.Attributes.src "/back.svg" ] [] ]
+
+
 view :
     Data
     ->
@@ -102,9 +107,18 @@ view :
     -> View msg
     -> { body : List (Html msg), title : String }
 view sharedData page _ _ pageView =
+    let
+        isOnIndexPage =
+            Maybe.map ((==) Route.Index) page.route |> Maybe.withDefault False
+    in
     { body =
         [ Html.header []
-            [ Html.h1 []
+            [ if not isOnIndexPage then
+                linkToHomePage
+
+              else
+                Html.text ""
+            , Html.h1 []
                 [ Html.text <|
                     (page.route
                         |> Maybe.map
