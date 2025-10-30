@@ -13,6 +13,7 @@ import {
   Type,
 } from "./utils/sparql.ts"
 import { Instance, Release } from "./utils/release.ts"
+import { existsSync, mkdirSync } from "node:fs"
 
 // CONFIGURATION
 
@@ -151,7 +152,17 @@ function makeSetsSerializable(_: string, value: any) {
   return value
 }
 
+function createFolderIfNotExists(path: string) {
+  if (!existsSync(path)) mkdirSync(path)
+}
+
 // MAIN SCRIPT
+
+// Create cache folders
+createFolderIfNotExists("cache")
+createFolderIfNotExists("cache/json-sparql")
+createFolderIfNotExists("cache/json")
+createFolderIfNotExists("cache/goodreads")
 
 const sparqlQueue = new PQueue({ concurrency: 10 })
 const goodReadsQueue = new PQueue({ concurrency: 20 })

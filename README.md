@@ -8,6 +8,18 @@ I want to read more Swedish original works, and when I asked at my local library
 
 But I also want to highlight more today unknown/forgotten Swedish authors and works, since there are a lot of Swedish books that are currently stored in storage where the public is not allowed to browse, so the discoverability of those books are limited.
 
+# Install
+
+Go to the scripts folder and run `npx tsx fetch_original_swedish_books.ts`
+This will:
+
+- For each year from 1850 to 2024, call the SPARQL endpoint and fetch the data available
+  - This data is cached in /cache/json-sparql
+- For each unique title that is returned, try to fetch information from Goodreads using either ISBN or title + author name
+  - This data is cached in /cache/goodreads
+
+After this process is done, run `npx tsx import.ts` which imports the data to the SQLite database that is used by elm-pages.
+
 # Information
 
 This base book information is fetched from [Libris](https://libris.kb.se/), provided by [Kungliga biblioteket](https://www.kb.se/)
