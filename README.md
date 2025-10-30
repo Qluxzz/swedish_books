@@ -8,7 +8,7 @@ I want to read more Swedish original works, and when I asked at my local library
 
 But I also want to highlight more today unknown/forgotten Swedish authors and works, since there are a lot of Swedish books that are currently stored in storage where the public is not allowed to browse, so the discoverability of those books are limited.
 
-# Install
+# Local development
 
 Go to the scripts folder and run `npx tsx fetch_original_swedish_books.ts`
 This will:
@@ -18,7 +18,9 @@ This will:
 - For each unique title that is returned, try to fetch information from Goodreads using either ISBN or title + author name
   - This data is cached in /cache/goodreads
 
-After this process is done, run `npx tsx import.ts` which imports the data to the SQLite database that is used by elm-pages.
+If anything fails during this, Goodreads start returning 503 because you're getting throttled, wait a bit then re-run the script, since successful response from both the SPARQL and Goodreads API is cached, you can resume the progress right where it stopped.
+
+After this process is done, run `npx tsx import.ts` which create SQLite database that is used by elm-pages.
 
 # Information
 
