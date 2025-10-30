@@ -6,7 +6,7 @@ PREFIX country: <https://id.kb.se/country/>
 PREFIX nat: <https://id.kb.se/nationality/>
 
 SELECT DISTINCT 
-  ?work ?title ?author ?givenName ?familyName ?lifeSpan ?isbn ?genre
+  ?instance ?work ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?genre
 {
   ?instance a ?type ;
     :instanceOf ?work ;
@@ -49,7 +49,10 @@ SELECT DISTINCT
   }
 
   # Get author information
-  ?author :givenName ?givenName ; :familyName ?familyName ; :nationality nat:e-sw---
+  ?author :givenName ?givenName ; 
+          :familyName ?familyName ;
+          # Must be a swedish author
+          :nationality nat:e-sw--- 
   OPTIONAL { ?author :lifeSpan ?lifeSpan }
   OPTIONAL { ?author :identifiedBy [ a :ISNI ; :value ?isni ]}
 }
