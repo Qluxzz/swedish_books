@@ -158,11 +158,13 @@ function createFolderIfNotExists(path: string) {
 
 // MAIN SCRIPT
 
+const rootPath = import.meta.dirname
+
 // Create cache folders
-createFolderIfNotExists("cache")
-createFolderIfNotExists("cache/json-sparql")
-createFolderIfNotExists("cache/json")
-createFolderIfNotExists("cache/goodreads")
+createFolderIfNotExists(`${rootPath}/cache`)
+createFolderIfNotExists(`${rootPath}/cache/json-sparql`)
+createFolderIfNotExists(`${rootPath}/cache/json`)
+createFolderIfNotExists(`${rootPath}/cache/goodreads`)
 
 const sparqlQueue = new PQueue({ concurrency: 10 })
 const goodReadsQueue = new PQueue({ concurrency: 20 })
@@ -228,7 +230,7 @@ fileQueue.addAll(
 
     if (enhanced.length !== 0)
       await writeFile(
-        `cache/json/${year}.json`,
+        `${rootPath}/cache/json/${year}.json`,
         JSON.stringify(enhanced, makeSetsSerializable, 2)
       )
   })

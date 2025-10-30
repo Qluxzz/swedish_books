@@ -5,7 +5,7 @@ const FORMAT = "application/sparql-results+json"
 
 const BASE_URL =
   "https://libris.kb.se/sparql?format=FORMAT&should-sponge=soft&query=QUERY"
-const QUERY = (await readFile("../query.rq"))
+const QUERY = (await readFile(`${import.meta.dirname}/query.rq`))
   .toString()
   // Remove all comments from query
   .replaceAll(/^.*#.*$\n?/gm, "")

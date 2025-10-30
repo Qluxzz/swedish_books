@@ -7,9 +7,10 @@ import { DatabaseSync } from "node:sqlite"
 import { Instance, Release } from "./utils/release.ts"
 import { getIdentifier, throwError } from "./utils/helpers.ts"
 import slugify from "slugify"
+import path from "node:path"
 
-const DATABASE_FILE = "./books.db"
-const JSON_FOLDER = "cache/json"
+const DATABASE_FILE = path.resolve(import.meta.dirname, "books.db")
+const JSON_FOLDER = path.resolve(import.meta.dirname, "cache/json")
 
 if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
 
