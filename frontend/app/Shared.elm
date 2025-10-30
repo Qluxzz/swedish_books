@@ -101,6 +101,8 @@ linkToHomePage =
     Html.a [ Html.Attributes.class "back", Html.Attributes.href (Route.toString Route.Index) ] [ Html.img [ Html.Attributes.src "/back.svg" ] [] ]
 
 
+{-| Adds noreferrer and nofollow and opens the link in a new tab
+-}
 externalLink : List (Html.Attribute msg) -> List (Html.Html msg) -> Html.Html msg
 externalLink attributes children =
     Html.a ([ Html.Attributes.target "_blank", Html.Attributes.rel "noreferrer nofollow" ] ++ attributes) children
