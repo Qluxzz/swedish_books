@@ -1,12 +1,12 @@
 module Book exposing (Book, ViewOptions, decode, lifeSpanView, view)
 
+import Dict
 import Head.Seo exposing (book)
 import Html
 import Html.Attributes
 import Json.Decode
 import Route
 import Serializer.Json.Extra
-import Shared
 
 
 type Book
@@ -19,6 +19,7 @@ type alias Model =
     , author : Author
     , year : Int
     , isbn : Maybe String
+    , imageUrl : Maybe String
     }
 
 
@@ -30,25 +31,54 @@ type alias Rating =
     { avgRating : Float
     , ratings : Int
     , bookUrl : String
-    , imageId : Maybe String
     }
+
+
+imageHostToUrl : Dict.Dict String String
+imageHostToUrl =
+    Dict.fromList
+        [ ( "tomasgift"
+          , "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/tomasgift/libris-bib/{ID}/{ID}/orginal"
+          )
+        , ( "digi", "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/digi/libris-bib/{ID}/{ID}.jpg/orginal" )
+        , ( "bokrondellen"
+          , "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/{ID}/{ID}.jpg/orginal"
+          )
+        , ( "author"
+          , "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/author/libris-bib/{ID}/{ID}.jpg/orginal"
+          )
+        , ( "goodreads"
+          , "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/{ID}._SX200_.jpg"
+          )
+        ]
+
+
+toImageUrl : String -> String -> Maybe String
+toImageUrl host id =
+    imageHostToUrl
+        |> Dict.get host
+        |> Maybe.map (String.replace "{ID}" id)
 
 
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\title authorId authorName authorSlug lifeSpan year isbn avgRating ratings bookUrl imageId ->
+        (\title authorId authorName authorSlug lifeSpan year isbn avgRating ratings bookUrl imageHost imageId ->
             let
                 author : Author
                 author =
                     { id = authorId, name = authorName, slug = authorSlug, lifeSpan = lifeSpan }
 
+                imageUrl =
+                    Maybe.map2 toImageUrl imageHost imageId
+                        |> Maybe.andThen identity
+
                 model =
-                    Model title author year isbn
+                    Model title author year isbn imageUrl
             in
             Maybe.map3
                 (\avg r bUrl ->
-                    Rated model (Rating avg r bUrl imageId)
+                    Rated model (Rating avg r bUrl)
                 )
                 avgRating
                 ratings
@@ -62,10 +92,11 @@ decode =
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "author_life_span" Json.Decode.string))
         |> Serializer.Json.Extra.andMap (Json.Decode.field "year" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "isbn" Json.Decode.string))
-        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "avgRating" Json.Decode.float))
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "avg_rating" Json.Decode.float))
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "ratings" Json.Decode.int))
-        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "bookUrl" Json.Decode.string))
-        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "imageId" Json.Decode.string))
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "book_url" Json.Decode.string))
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "image_host" Json.Decode.string))
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "image_id" Json.Decode.string))
 
 
 type alias ViewOptions =
@@ -83,28 +114,21 @@ view { linkToAuthor, linkToYear } book =
                 Unrated b ->
                     "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ b.title ++ " " ++ b.author.name ++ "&d=libris&f=simp&spell=true"
 
-        image =
+        baseModel =
             case book of
-                Rated b r ->
-                    case r.imageId of
-                        Just iId ->
-                            [ Shared.externalLink [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ iId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
-
-                        Nothing ->
-                            case b.isbn of
-                                Just isbn ->
-                                    [ Shared.externalLink [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
-
-                                Nothing ->
-                                    []
+                Rated b _ ->
+                    b
 
                 Unrated b ->
-                    case b.isbn of
-                        Just isbn ->
-                            [ Shared.externalLink [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+                    b
 
-                        Nothing ->
-                            []
+        image =
+            case baseModel.imageUrl of
+                Just u ->
+                    [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ baseModel.title ] [] ]
+
+                Nothing ->
+                    []
     in
     case book of
         Rated b r ->

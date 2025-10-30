@@ -4,7 +4,7 @@
 
 import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
-import { Release } from "./utils/release.ts"
+import { Instance, Release } from "./utils/release.ts"
 import { getIdentifier, throwError } from "./utils/helpers.ts"
 import slugify from "slugify"
 
@@ -47,7 +47,7 @@ CREATE TABLE books (
 db.exec(`
 CREATE TABLE book_covers (
   id INTEGER PRIMARY KEY,
-  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE UNIQUE,
   host TEXT NOT NULL,
   image_id TEXT NOT NULL
 );
@@ -60,7 +60,6 @@ CREATE TABLE goodreads (
   pages INTEGER,
   avg_rating INTEGER NOT NULL,
   ratings INTEGER NOT NULL,
-  image_id TEXT,
   book_url TEXT NOT NULL
 );
 `)
@@ -93,28 +92,117 @@ const insertBookGenre = db.prepare(
 )
 
 const insertGoodreadsData = db.prepare(
-  "INSERT INTO goodreads(book_id, pages, avg_rating, ratings, image_id, book_url) VALUES (?, ?, ?, ?, ?, ?)"
+  "INSERT INTO goodreads(book_id, pages, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?, ?)"
 )
 
 const insertBookCoverImage = db.prepare(
-  "INSERT INTO book_covers (book_id, host, image_id) VALUES (?, ?, ?)"
+  "INSERT OR IGNORE INTO book_covers (book_id, host, image_id) VALUES (?, ?, ?)"
 )
 
 const currentYear = new Date().getFullYear()
 const yearRegex = /\d{4}/g
 
-function authorHasValidLifeSpan(lifeSpan: string): boolean {
+function getBookCover(
+  instance: Instance,
+  book: Release
+): { host: string; id: string } | null {
+  if (!instance.imageHost) return null
+
+  const host =
+    instance.imageHost.split("/").pop() ??
+    throwError("Failed to get image host")
+
+  switch (host) {
+    case "tomasgift":
+      if (!instance.bib)
+        throw new Error("Image requires a bib, but instance doesn't have any!")
+      return {
+        host: host,
+        id: getIdentifier(instance.bib) ?? throwError("Failed to get bib id"),
+      }
+    case "author":
+      return {
+        host: host,
+        id:
+          instance.isbn ??
+          getIdentifier(instance.id) ??
+          throwError(
+            `Instance ${
+              instance.id
+            } did not have an ISBN, and we couldn't parse the id, for book ${JSON.stringify(
+              book
+            )}`
+          ),
+      }
+
+    case "digi":
+      return {
+        host: host,
+        id:
+          instance.isbn ??
+          instance.bib ??
+          throwError(
+            `Instance ${
+              instance.id
+            } did not have an ISBN, and it didn't have a BIB, for book ${JSON.stringify(
+              book
+            )}`
+          ),
+      }
+
+    case "bokrondellen":
+    case "librisse":
+      if (!instance.isbn)
+        throw new Error(
+          `Image host "${host}" requires ISBN, but instance doesn't have any! ${JSON.stringify(
+            book
+          )}`
+        )
+      return { host: host, id: instance.isbn }
+
+    case "nielsen":
+      // Not sure about this, using isbn returns a different title when tested
+      return null
+
+    case "sesam":
+      // Example id, no way to find it in the existing data
+      // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/sesam/isbn/9189144325/I_364572_20061019105257.jpg/orginal
+      return null
+
+    case "libris":
+      // Example id, no way to find it in the existing data
+      // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/libris/libris-bib/7650115/91-7588-130-6B.jpg/orginal
+      return null
+
+    default:
+      throw new Error(
+        `Unknown image host: ${instance.imageHost}. ${JSON.stringify(book)}`
+      )
+  }
+}
+
+function authorHasValidLifeSpan(lifeSpan: string): {
+  valid: boolean
+  alive?: boolean
+} {
   const matches = lifeSpan.match(yearRegex)
   // There was only a single four digit year in the lifespan field
   // We assume this is the birth year (this is not always true)
-  if (matches?.length === 1) {
-    const birth = parseInt(matches[0], 10)
-    // We add 100 years to the birth year
-    // if that's greater than the current year
-    // we count that as them still being alive, since we have no more info
-    return birth + 100 > currentYear
+
+  switch (matches?.length) {
+    case 1:
+      const birth = parseInt(matches[0], 10)
+      // We add 100 years to the birth year
+      // if that's greater than the current year
+      // we count that as them still being alive, since we have no more info
+      return { valid: true, alive: birth + 100 > currentYear }
+    case 2:
+      // The author has died
+      return { valid: true, alive: false }
+
+    default:
+      return { valid: false }
   }
-  return false
 }
 
 const NO_BOOK_COVER_URL = "nophoto/book/111x148"
@@ -134,7 +222,10 @@ for (const file of files) {
   const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
 
   for (const book of books) {
-    if (!book.lifeSpan || !authorHasValidLifeSpan(book.lifeSpan)) continue
+    if (!book.lifeSpan) continue
+
+    const { valid, alive } = authorHasValidLifeSpan(book.lifeSpan)
+    if (!valid || alive) continue
 
     insertAuthor.run(
       book.authorId,
@@ -150,71 +241,14 @@ for (const file of files) {
     }
     if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
 
+    // We prefer Libris book cover if it exists
     for (const instance of book.instances) {
-      const data = (() => {
-        if (!instance.imageHost) return null
+      const data = getBookCover(instance, book)
 
-        const host =
-          instance.imageHost.split("/").pop() ??
-          throwError("Failed to get image host")
-
-        switch (host) {
-          case "tomasgift":
-            if (!instance.bib)
-              throw new Error(
-                "Image requires a bib, but instance doesn't have any!"
-              )
-            return { host: host, id: getIdentifier(instance.bib) }
-          case "author":
-            return {
-              host: host,
-              id:
-                instance.isbn ??
-                getIdentifier(instance.id) ??
-                throwError(
-                  `Instance ${
-                    instance.id
-                  } did not have an ISBN, and we couldn't parse the id, for book ${JSON.stringify(
-                    book
-                  )}`
-                ),
-            }
-
-          case "bokrondellen":
-          case "librisse":
-          case "digi":
-            if (!instance.isbn)
-              throw new Error(
-                `Image host "${host}" requires ISBN, but instance doesn't have any! ${JSON.stringify(
-                  book
-                )}`
-              )
-            return { host: host, id: instance.isbn }
-
-          case "nielsen":
-            // Not sure about this, using isbn returns a different title when tested
-            return null
-
-          case "sesam":
-            // Example id, no way to find it in the existing data
-            // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/sesam/isbn/9189144325/I_364572_20061019105257.jpg/orginal
-            return null
-
-          case "libris":
-            // Example id, no way to find it in the existing data
-            // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/libris/libris-bib/7650115/91-7588-130-6B.jpg/orginal
-            return null
-
-          default:
-            throw new Error(
-              `Unknown image host: ${instance.imageHost}. ${JSON.stringify(
-                book
-              )}`
-            )
-        }
-      })()
-
-      if (data) insertBookCoverImage.run(bookId, data.host, data.id)
+      if (data) {
+        insertBookCoverImage.run(bookId, data.host, data.id)
+        break
+      }
     }
 
     // Insert goodreads data if exists
@@ -224,9 +258,11 @@ for (const file of files) {
         book.goodreads.numPages,
         book.goodreads.avgRating,
         book.goodreads.ratingsCount,
-        getImageId(book.goodreads.imageUrl),
         book.goodreads.bookUrl
       )
+
+      const imageId = getImageId(book.goodreads.imageUrl)
+      if (imageId) insertBookCoverImage.run(bookId, "goodreads", imageId)
     }
 
     for (const genre of book.genres) {

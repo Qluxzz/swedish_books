@@ -99,7 +99,7 @@ view app _ =
 
 pages : BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 pages =
-    BackendTask.Custom.run "getAuthorsWithMultipleTitles"
+    BackendTask.Custom.run "getAuthors"
         Json.Encode.null
         (Json.Decode.list
             (Json.Decode.map2 RouteParams
