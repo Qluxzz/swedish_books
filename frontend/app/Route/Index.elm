@@ -52,18 +52,13 @@ route =
 
 data : BackendTask FatalError Data
 data =
-    BackendTask.map2
-        (\rated unrated -> { ratedBooks = rated, unratedBooks = unrated })
-        (BackendTask.Custom.run "getRatedTitles"
-            Json.Encode.null
-            (Json.Decode.list Book.decode)
-            |> BackendTask.allowFatal
+    BackendTask.Custom.run "getHomePageData"
+        Json.Encode.null
+        (Json.Decode.map2 Data
+            (Json.Decode.field "ratedTitles" (Json.Decode.list Book.decode))
+            (Json.Decode.field "unratedTitles" (Json.Decode.list Book.decode))
         )
-        (BackendTask.Custom.run "getUnratedTitles"
-            Json.Encode.null
-            (Json.Decode.list Book.decode)
-            |> BackendTask.allowFatal
-        )
+        |> BackendTask.allowFatal
 
 
 head :
@@ -79,7 +74,7 @@ head _ =
             , dimensions = Nothing
             , mimeType = Nothing
             }
-        , description = "Welcome to elm-pages!"
+        , description = "Hitta svenska skönlitterära originalverk som många kanske inte känner till"
         , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
         , title = "Gömda böcker"
         }

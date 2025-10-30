@@ -6,6 +6,7 @@ import Html.Attributes
 import Json.Decode
 import Route
 import Serializer.Json.Extra
+import Shared
 
 
 type Book
@@ -87,12 +88,12 @@ view { linkToAuthor, linkToYear } book =
                 Rated b r ->
                     case r.imageId of
                         Just iId ->
-                            [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ iId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+                            [ Shared.externalLink [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src <| "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/" ++ iId ++ "._SX200_.jpg", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
 
                         Nothing ->
                             case b.isbn of
                                 Just isbn ->
-                                    [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+                                    [ Shared.externalLink [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
 
                                 Nothing ->
                                     []
@@ -100,7 +101,7 @@ view { linkToAuthor, linkToYear } book =
                 Unrated b ->
                     case b.isbn of
                         Just isbn ->
-                            [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
+                            [ Shared.externalLink [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src <| "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/" ++ isbn ++ "/" ++ isbn ++ ".jpg/orginal", Html.Attributes.alt <| "Omslag för " ++ b.title ] [] ] ]
 
                         Nothing ->
                             []

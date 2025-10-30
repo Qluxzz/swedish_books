@@ -1,4 +1,4 @@
-module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
+module Shared exposing (Data, Model, Msg(..), SharedMsg(..), externalLink, template)
 
 import BackendTask exposing (BackendTask)
 import BackendTask.Custom
@@ -96,6 +96,11 @@ linkToHomePage =
     Html.a [ Html.Attributes.class "back", Html.Attributes.href (Route.toString Route.Index) ] [ Html.img [ Html.Attributes.src "/back.svg" ] [] ]
 
 
+externalLink : List (Html.Attribute msg) -> List (Html.Html msg) -> Html.Html msg
+externalLink attributes children =
+    Html.a ([ Html.Attributes.target "_blank", Html.Attributes.rel "noreferrer nofollow" ] ++ attributes) children
+
+
 view :
     Data
     ->
@@ -156,9 +161,15 @@ view sharedData page _ _ pageView =
                 )
             ]
         , Html.footer []
-            [ Html.div [ Html.Attributes.class "container" ]
-                [ Html.p [] [ Html.text "En samling av glömda svenska litterära skatter" ]
+            [ Html.span []
+                [ Html.text "Skapad med hjälp av "
+                , externalLink
+                    [ Html.Attributes.href "https://elm-lang.org/" ]
+                    [ Html.text "Elm" ]
+                , Html.text " och "
+                , externalLink [ Html.Attributes.href "https://elm-pages.com/" ] [ Html.text "elm-pages" ]
                 ]
+            , externalLink [ Html.Attributes.href "https://github.com/Qluxzz/swedish_books" ] [ Html.text "Källkod" ]
             ]
         ]
     , title = pageView.title

@@ -40,8 +40,8 @@ const database = new DatabaseSync("../books.db", {
   readOnly: true,
 })
 
-export async function getRatedTitles() {
-  const result = database
+export async function getHomePageData() {
+  const ratedTitles = database
     .prepare(
       `
 WITH ${ranked}, ${filterPopularAuthors}
@@ -70,11 +70,7 @@ LIMIT 24;
     )
     .all()
 
-  return result
-}
-
-export async function getUnratedTitles() {
-  const result = database
+  const unratedTitles = database
     .prepare(
       `
 WITH ${filterPopularAuthors}
@@ -98,7 +94,7 @@ LIMIT 24
     )
     .all()
 
-  return result
+  return { ratedTitles, unratedTitles }
 }
 
 export async function getTitlesForYear(year: string) {

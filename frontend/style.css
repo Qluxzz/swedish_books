@@ -234,15 +234,11 @@ section {
 
 /* Footer */
 footer {
-  padding: var(--spacing-8) 0;
+  padding: var(--spacing-8);
   background-color: var(--color-muted);
-}
-
-.footer-text {
-  text-align: center;
-  font-size: 0.875rem;
-
-  color: var(--color-muted-foreground);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 a.back {
