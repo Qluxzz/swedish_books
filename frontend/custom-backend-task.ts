@@ -191,7 +191,7 @@ LEFT JOIN book_covers bc
   ON bc.book_id = b.id
 WHERE 
   b.year = ?
-ORDER BY (g.ratings * g.avg_rating) DESC
+ORDER BY bc.id IS NOT NULL DESC, (g.ratings * g.avg_rating) DESC
     `
     )
     .all(year)
@@ -220,7 +220,7 @@ LEFT JOIN goodreads g
 LEFT JOIN book_covers bc
   ON bc.book_id = b.id
 WHERE (g.ratings IS NULL OR g.ratings = 0) AND b.year = ?
-ORDER BY p.pct DESC, RANDOM()
+ORDER BY bc.id IS NOT NULL DESC, p.pct DESC, RANDOM()
     `
     )
     .all(year)
