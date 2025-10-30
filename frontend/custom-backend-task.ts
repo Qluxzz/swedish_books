@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite"
-import { throwError } from "../helpers.ts"
+import { throwError } from "../scripts/utils/helpers.ts"
 
 /**
  * For ranked books (has data from Goodreads) we ignore the 2% most popular books
@@ -208,8 +208,7 @@ export function getTitlesForAuthor(authorId: string) {
   const authorInfo =
     database
       .prepare("SELECT name, life_span FROM authors WHERE id = ?")
-      .all(authorId)
-      .at(0) ?? throwError("Should be at least one row!")
+      .get(authorId) ?? throwError("Should be at least one row!")
 
   const titles = database
     .prepare(
@@ -226,7 +225,12 @@ SELECT
   b.ratings,
   b.bookUrl,
   b.imageId 
-FROM books b INNER JOIN authors a ON b.author_id = a.id WHERE author_id = ? ORDER BY year DESC`
+FROM books b 
+INNER JOIN authors a 
+  ON b.author_id = a.id 
+WHERE author_id = ? 
+ORDER BY IIF(b.ratings is not null, b.ratings * b.avgRating, b.year) DESC
+`
     )
     .all(authorId)
 
