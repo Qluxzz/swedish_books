@@ -7,6 +7,7 @@ import Html.Attributes
 import Json.Decode
 import Route
 import Serializer.Json.Extra
+import Shared
 
 
 type Book
@@ -125,19 +126,19 @@ view { linkToAuthor, linkToYear } book =
         image =
             case baseModel.imageUrl of
                 Just u ->
-                    [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ baseModel.title ] [] ]
+                    Html.div [ Html.Attributes.class "book-cover " ]
+                        [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ baseModel.title ] [] ]
 
                 Nothing ->
-                    []
+                    Html.text ""
     in
     case book of
         Rated b r ->
             Html.article [ Html.Attributes.class "book-card" ]
-                [ Html.div [ Html.Attributes.class "book-cover " ]
-                    image
+                [ image
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
-                        [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
+                        [ Shared.externalLink [ Html.Attributes.href url ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
                         , bookAuthor linkToAuthor b.author
                         ]
                     , Html.hr [] []
@@ -153,11 +154,10 @@ view { linkToAuthor, linkToYear } book =
 
         Unrated b ->
             Html.article [ Html.Attributes.class "book-card" ]
-                [ Html.div [ Html.Attributes.class "book-cover " ]
-                    image
+                [ image
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
-                        [ Html.a [ Html.Attributes.href url ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
+                        [ Shared.externalLink [ Html.Attributes.href url ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
                     , bookAuthor linkToAuthor b.author
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
