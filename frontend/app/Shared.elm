@@ -106,14 +106,22 @@ view sharedData page _ _ pageView =
         [ Html.header []
             [ Html.h1 []
                 [ Html.text <|
-                    case page.route of
-                        Just (Route.Year__Number_ { number }) ->
-                            "Böcker för år " ++ number
+                    (page.route
+                        |> Maybe.map
+                            (\route ->
+                                case route of
+                                    Route.Year__Number_ { number } ->
+                                        "Böcker för år " ++ number
 
-                        _ ->
-                            "Gömda böcker"
+                                    Route.Index ->
+                                        "Gömda böcker"
+
+                                    Route.Author__Id___Name_ _ ->
+                                        "Böcker för författare"
+                            )
+                        |> Maybe.withDefault "Gömda böcker"
+                    )
                 ]
-            , Html.p [] [ Html.text "Svenska verk från bibliotekets magasin" ]
             ]
         , Html.main_ []
             [ Html.div [ Html.Attributes.class "container" ]

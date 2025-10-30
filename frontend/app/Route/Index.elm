@@ -93,5 +93,5 @@ view :
 view app _ =
     { title = "Gömda böcker"
     , body =
-        BookList.view True app.data.ratedBooks app.data.unratedBooks
+        BookList.view { linkToAuthor = True, linkToYear = True } app.data.ratedBooks app.data.unratedBooks
     }

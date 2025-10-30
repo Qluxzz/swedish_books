@@ -6,6 +6,7 @@ import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
 import { Release } from "./release.ts"
 import { throwError } from "./helpers.ts"
+import slugify from "slugify"
 
 const DATABASE_FILE = "./books.db"
 const JSON_FOLDER = "json"
@@ -24,6 +25,7 @@ CREATE TABLE authors (
   id INTEGER PRIMARY KEY,
   libris_id TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
+  slug TEXT NOT NULL,
   life_span TEXT
 );
 
@@ -50,7 +52,7 @@ CREATE TABLE book_genre (
 `)
 
 const insertAuthor = db.prepare(
-  "INSERT OR IGNORE INTO authors (libris_id, name, life_span) VALUES (?, ?, ?)"
+  "INSERT OR IGNORE INTO authors (libris_id, name, life_span, slug) VALUES (?, ?, ?, ?)"
 )
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
@@ -103,7 +105,12 @@ for (const file of files) {
   for (const book of books) {
     if (!book.lifeSpan || isAuthorAlive(book.lifeSpan)) continue
 
-    insertAuthor.run(book.authorId, book.author, book.lifeSpan ?? null)
+    insertAuthor.run(
+      book.authorId,
+      book.author,
+      book.lifeSpan ?? null,
+      slugify.default(book.author, { lower: true, locale: "sv" })
+    )
     const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
     if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
 

@@ -48,8 +48,9 @@ WITH ${ranked}, ${filterPopularAuthors}
 SELECT
   b.title,
   a.id author_id,
-  a.name author,
-  a.life_span,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
   b.year,
   b.isbn,
   b.avgRating,
@@ -80,8 +81,9 @@ WITH ${filterPopularAuthors}
 SELECT
   b.title,
   a.id author_id,
-  a.name author,
-  a.life_span,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
   b.year,
   b.isbn
 FROM books b
@@ -107,8 +109,9 @@ WITH ${ranked}, ${filterPopularAuthors}
 SELECT
   b.title,
   a.id author_id,
-  a.name author,
-  a.life_span,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
   b.year,
   b.isbn,
   b.avgRating,
@@ -136,8 +139,9 @@ WITH ${filterPopularAuthors}
 SELECT
   b.title,
   a.id author_id,
-  a.name author,
-  a.life_span,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
   b.year,
   b.isbn
 FROM books b
@@ -195,10 +199,9 @@ GROUP BY year
 export function getAuthorsWithMultipleTitles() {
   return database
     .prepare(
-      "SELECT author_id FROM books GROUP BY author_id HAVING COUNT(*) > 1"
+      "SELECT a.id, a.slug FROM books b INNER JOIN authors a ON a.id = b.author_id GROUP BY author_id HAVING COUNT(*) > 1"
     )
     .all()
-    .map((x) => x.author_id)
 }
 
 export function getTitlesForAuthor(authorId: string) {
@@ -211,10 +214,12 @@ export function getTitlesForAuthor(authorId: string) {
   const titles = database
     .prepare(
       `
-SELECT b.title,
+SELECT 
+  b.title,
   a.id author_id,
-  a.name author,
-  a.life_span,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
   b.year,
   b.isbn,
   b.avgRating,

@@ -1,4 +1,4 @@
-module Route.Author.Id_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
+module Route.Author.Id_.Name_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
 {-|
 
@@ -9,7 +9,6 @@ module Route.Author.Id_ exposing (Model, Msg, RouteParams, route, Data, ActionDa
 import BackendTask
 import BackendTask.Custom
 import Book
-import Effect
 import FatalError exposing (FatalError)
 import Head
 import Html
@@ -19,7 +18,6 @@ import Json.Encode
 import PagesMsg
 import RouteBuilder
 import Shared
-import UrlPath
 import View
 
 
@@ -32,7 +30,7 @@ type alias Msg =
 
 
 type alias RouteParams =
-    { id : String }
+    { id : String, name : String }
 
 
 route : RouteBuilder.StatelessRoute RouteParams Data ActionData
@@ -76,7 +74,7 @@ data routeParams =
 
 
 head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag
-head app =
+head _ =
     []
 
 
@@ -84,7 +82,7 @@ view :
     RouteBuilder.App Data ActionData RouteParams
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
-view app shared =
+view app _ =
     { title = app.data.author.name
     , body =
         [ Html.section [ Html.Attributes.class "section" ]
@@ -93,7 +91,7 @@ view app shared =
             , Html.p [ Html.Attributes.class "section-description" ] []
             , Html.div
                 [ Html.Attributes.class "book-grid" ]
-                (List.map (Book.view True) app.data.titles)
+                (List.map (Book.view { linkToAuthor = False, linkToYear = True }) app.data.titles)
             ]
         ]
     }
@@ -101,9 +99,12 @@ view app shared =
 
 pages : BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 pages =
-    (BackendTask.Custom.run "getAuthorsWithMultipleTitles"
+    BackendTask.Custom.run "getAuthorsWithMultipleTitles"
         Json.Encode.null
-        (Json.Decode.list Json.Decode.int)
+        (Json.Decode.list
+            (Json.Decode.map2 RouteParams
+                (Json.Decode.field "id" Json.Decode.int |> Json.Decode.map String.fromInt)
+                (Json.Decode.field "slug" Json.Decode.string)
+            )
+        )
         |> BackendTask.allowFatal
-    )
-        |> BackendTask.map (List.map (\author -> { id = String.fromInt author }))

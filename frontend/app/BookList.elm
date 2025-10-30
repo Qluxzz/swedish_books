@@ -5,8 +5,8 @@ import Html
 import Html.Attributes
 
 
-view : Bool -> List Book.Book -> List Book.Book -> List (Html.Html msg)
-view linkToYear ratedBooks unratedBooks =
+view : Book.ViewOptions -> List Book.Book -> List Book.Book -> List (Html.Html msg)
+view viewOptions ratedBooks unratedBooks =
     [ Html.section [ Html.Attributes.class "section" ]
         [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Betygsatta böcker" ]
         , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa böcker hittades på Goodreads, men är ändå av mindre populära författare" ]
@@ -14,7 +14,7 @@ view linkToYear ratedBooks unratedBooks =
             Html.text "Inga böcker hittades"
 
           else
-            Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view linkToYear) ratedBooks)
+            Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view viewOptions) ratedBooks)
         ]
     , Html.section [ Html.Attributes.class "section" ]
         [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Mysterierna" ]
@@ -23,6 +23,6 @@ view linkToYear ratedBooks unratedBooks =
             Html.text "Inga böcker hittades"
 
           else
-            Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view linkToYear) unratedBooks)
+            Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view viewOptions) unratedBooks)
         ]
     ]

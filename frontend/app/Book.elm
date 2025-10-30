@@ -1,4 +1,4 @@
-module Book exposing (Book, decode, lifeSpanView, view)
+module Book exposing (Book, ViewOptions, decode, lifeSpanView, view)
 
 import Head.Seo exposing (book)
 import Html
@@ -22,7 +22,7 @@ type alias Model =
 
 
 type alias Author =
-    { id : Int, name : String, lifeSpan : Maybe String }
+    { id : Int, name : String, slug : String, lifeSpan : Maybe String }
 
 
 type alias Rating =
@@ -36,11 +36,11 @@ type alias Rating =
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\title authorId authorName lifeSpan year isbn avgRating ratings bookUrl imageId ->
+        (\title authorId authorName authorSlug lifeSpan year isbn avgRating ratings bookUrl imageId ->
             let
                 author : Author
                 author =
-                    { id = authorId, name = authorName, lifeSpan = lifeSpan }
+                    { id = authorId, name = authorName, slug = authorSlug, lifeSpan = lifeSpan }
 
                 model =
                     Model title author year isbn
@@ -56,8 +56,9 @@ decode =
         )
         |> Serializer.Json.Extra.andMap (Json.Decode.field "title" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_id" Json.Decode.int)
-        |> Serializer.Json.Extra.andMap (Json.Decode.field "author" Json.Decode.string)
-        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "life_span" Json.Decode.string))
+        |> Serializer.Json.Extra.andMap (Json.Decode.field "author_name" Json.Decode.string)
+        |> Serializer.Json.Extra.andMap (Json.Decode.field "author_slug" Json.Decode.string)
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "author_life_span" Json.Decode.string))
         |> Serializer.Json.Extra.andMap (Json.Decode.field "year" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "isbn" Json.Decode.string))
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "avgRating" Json.Decode.float))
@@ -66,8 +67,12 @@ decode =
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "imageId" Json.Decode.string))
 
 
-view : Bool -> Book -> Html.Html msg
-view linkToYear book =
+type alias ViewOptions =
+    { linkToAuthor : Bool, linkToYear : Bool }
+
+
+view : ViewOptions -> Book -> Html.Html msg
+view { linkToAuthor, linkToYear } book =
     let
         url =
             case book of
@@ -108,13 +113,13 @@ view linkToYear book =
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
                         [ Html.a [ Html.Attributes.href url, Html.Attributes.target "_blank" ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ]
-                        , bookAuthor b.author
+                        , bookAuthor linkToAuthor b.author
                         ]
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
                         [ yearView b.year linkToYear
                         , Html.div [ Html.Attributes.class "book-rating" ]
-                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "../star.svg" ] []
+                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "/star.svg" ] []
                             , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
                             ]
                         ]
@@ -128,7 +133,7 @@ view linkToYear book =
                 , Html.div [ Html.Attributes.class "book-info" ]
                     [ Html.div [ Html.Attributes.class "book-details" ]
                         [ Html.a [ Html.Attributes.href url ] [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text b.title ] ] ]
-                    , bookAuthor b.author
+                    , bookAuthor linkToAuthor b.author
                     , Html.hr [] []
                     , Html.div [ Html.Attributes.class "book-meta" ]
                         [ yearView b.year linkToYear ]
@@ -136,9 +141,17 @@ view linkToYear book =
                 ]
 
 
-bookAuthor : Author -> Html.Html msg
-bookAuthor { id, name, lifeSpan } =
-    Html.a [ Html.Attributes.href (Route.toString (Route.Author__Id_ { id = String.fromInt id })), Html.Attributes.class "book-author" ] [ Html.text <| ([ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ") ]
+bookAuthor : Bool -> Author -> Html.Html msg
+bookAuthor linkToAuthor { id, name, slug, lifeSpan } =
+    let
+        displayName =
+            Html.text <| ([ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ")
+    in
+    if linkToAuthor then
+        Html.a [ Html.Attributes.href (Route.toString (Route.Author__Id___Name_ { id = String.fromInt id, name = slug })), Html.Attributes.class "book-author" ] [ displayName ]
+
+    else
+        Html.span [] [ displayName ]
 
 
 lifeSpanView : Maybe String -> Maybe String
