@@ -68,23 +68,17 @@ header {
   display: flex;
   align-items: center;
   gap: 10px;
+  line-height: 1;
 
   background-color: var(--color-muted);
-  padding: var(--spacing-8);
+  padding: var(--spacing-4);
 
   h1 {
     font-family: var(--font-serif);
     font-size: 3rem;
     font-weight: bold;
     color: var(--color-foreground);
-    margin-bottom: var(--spacing-3);
     text-wrap: balance;
-  }
-
-  p {
-    font-size: 1.25rem;
-    color: var(--color-muted-foreground);
-    text-wrap: pretty;
   }
 }
 
@@ -162,20 +156,13 @@ section {
   transition: transform 0.5s ease;
 }
 
-.book-card:hover .book-cover img {
-  transform: scale(1.05);
-}
-
 .book-info {
   padding: var(--spacing-4);
   display: flex;
   flex-direction: column;
   gap: 10px;
   flex: 1 1 0px;
-}
-
-.book-details {
-  flex-grow: 1;
+  justify-content: end;
 }
 
 .book-title {
