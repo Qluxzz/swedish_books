@@ -1,6 +1,9 @@
 import { DatabaseSync } from "node:sqlite"
 import { throwError } from "../helpers.ts"
 
+/**
+ * For ranked books (has data from Goodreads) we ignore the 2% most popular books
+ */
 const ranked = `
 ranked AS (
   SELECT 
@@ -16,6 +19,10 @@ ranked AS (
 )
 `
 
+/**
+ * The more instances of books an author has, we count as more popular.
+ * so then we filter out the most popular authors
+ */
 const filterPopularAuthors = `
 popularity AS (
   SELECT 
@@ -29,7 +36,7 @@ popularity AS (
   ) WHERE pct < 0.955
 )`
 
-const database = new DatabaseSync("../books9.db", {
+const database = new DatabaseSync("../books.db", {
   readOnly: true,
 })
 

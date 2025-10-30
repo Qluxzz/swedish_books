@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite"
 import { Release } from "./release.ts"
 import { throwError } from "./helpers.ts"
 
-const DATABASE_FILE = "./books9.db"
+const DATABASE_FILE = "./books.db"
 const JSON_FOLDER = "json"
 
 if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
