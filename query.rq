@@ -17,6 +17,7 @@ SELECT
   # We need the publisher, which is the image host, to know what URL are available for this work
   OPTIONAL { ?instance :image [ a :ImageObject ; :publisher ?imageHost ] }
   OPTIONAL { ?instance :sameAs ?bib }
+
   FILTER(?type IN (:Instance, :Print))
   FILTER(?year = "|YEAR|")
 
@@ -29,6 +30,10 @@ SELECT
   # Ignore translated works
   FILTER NOT EXISTS { ?work :translationOf [] }
   FILTER NOT EXISTS { ?work :hasPart [ :translationOf [] ] }
+  FILTER NOT EXISTS { 
+    ?work :contribution [ a :PrimaryContribution ; :role ?otherRole ]
+    FILTER(?otherRole != <https://id.kb.se/relator/translator>)
+  }
   # Ignore children's books
   FILTER NOT EXISTS { ?work :intendedAudience marc:Juvenile }
 
