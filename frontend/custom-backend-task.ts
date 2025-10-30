@@ -67,7 +67,7 @@ ranked_books AS (
   INNER JOIN ranked r ON r.book_id = b.id
   INNER JOIN goodreads g ON g.book_id = b.id
   INNER JOIN authors a ON a.id = b.author_id
-  LEFT JOIN book_covers bc ON bc.book_id = b.id
+  INNER JOIN book_covers bc ON bc.book_id = b.id
 )
 SELECT
   title,
@@ -94,7 +94,43 @@ LIMIT 48;
   const unratedTitles = database
     .prepare(
       `
-WITH ${filterPopularAuthors}
+WITH ${filterPopularAuthors},
+ranked_books AS (
+  SELECT
+    b.id AS book_id,
+    b.title,
+    a.id AS author_id,
+    a.name AS author_name,
+    a.life_span AS author_life_span,
+    a.slug AS author_slug,
+    b.year,
+    bc.host AS image_host,
+    bc.image_id AS image_id,
+    p.pct AS rating,
+    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY p.pct DESC) AS rn
+  FROM books b
+  INNER JOIN popularity p ON p.author_id = b.author_id
+  LEFT JOIN goodreads g ON g.book_id = b.id
+  INNER JOIN authors a ON a.id = b.author_id
+  INNER JOIN book_covers bc ON bc.book_id = b.id
+  WHERE g.id is NULL
+)
+SELECT
+  title,
+  author_id,
+  author_name,
+  author_life_span,
+  author_slug,
+  year,
+  image_host,
+  image_id,
+  rating
+FROM ranked_books
+WHERE rn = 1  -- keep only top book per author
+ORDER BY rating DESC
+LIMIT 48;
+
+
 SELECT DISTINCT
   b.title,
   a.id author_id,
@@ -192,10 +228,9 @@ ORDER BY p.pct DESC, RANDOM()
   return { ratedTitles, unratedTitles }
 }
 
-export function getCountOfTitlesPerYear() {
-  return database
-    .prepare(
-      `
+const countOfTitlesPerYear = database
+  .prepare(
+    `
 WITH ${ranked}, ${filterPopularAuthors}
 SELECT DISTINCT
   year,
@@ -223,17 +258,19 @@ WHERE g.ratings IS NULL OR g.ratings = 0
 GROUP BY b.year
 )
 GROUP BY year
+ORDER BY year DESC
 `
-    )
-    .all()
-    .reduce((acc, row) => {
-      acc[row.year] = row.amount
-      return acc
-    }, {})
+  )
+  .all()
+
+export function getCountOfTitlesPerYear() {
+  return countOfTitlesPerYear
 }
 
+const authors = database.prepare("SELECT * FROM authors").all()
+
 export function getAuthors() {
-  return database.prepare("SELECT * FROM authors").all()
+  return authors
 }
 
 export function getTitlesForAuthor(authorId: string) {

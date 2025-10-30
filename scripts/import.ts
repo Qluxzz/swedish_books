@@ -79,8 +79,8 @@ const insertAuthor = db.prepare(
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
 const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year, isbn)
-  VALUES (?, ?, ?, ?)
+  INSERT INTO books(title, author_id, year)
+  VALUES (?, ?, ?)
   ON CONFLICT(title, author_id)
   DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
   RETURNING id

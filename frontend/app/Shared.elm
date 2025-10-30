@@ -34,7 +34,7 @@ type Msg
 
 
 type alias Data =
-    { worksPerYear : Dict.Dict String Int
+    { worksPerYear : List ( Int, Int )
     }
 
 
@@ -83,12 +83,17 @@ subscriptions _ _ =
 
 data : BackendTask FatalError Data
 data =
-    (BackendTask.Custom.run "getCountOfTitlesPerYear"
+    BackendTask.Custom.run "getCountOfTitlesPerYear"
         Json.Encode.null
-        (Json.Decode.dict Json.Decode.int)
+        (Json.Decode.map Data
+            (Json.Decode.list
+                (Json.Decode.map2 Tuple.pair
+                    (Json.Decode.field "year" Json.Decode.int)
+                    (Json.Decode.field "amount" Json.Decode.int)
+                )
+            )
+        )
         |> BackendTask.allowFatal
-    )
-        |> BackendTask.map (\dict -> { worksPerYear = dict })
 
 
 linkToHomePage : Html msg
@@ -176,19 +181,20 @@ view sharedData page _ _ pageView =
     }
 
 
-worksPerYearView : Dict.Dict String Int -> Maybe String -> Html.Html msg
+worksPerYearView : List ( Int, Int ) -> Maybe String -> Html.Html msg
 worksPerYearView worksPerYear onYear =
     let
-        counts =
-            worksPerYear |> Dict.values
+        amounts =
+            List.map Tuple.second worksPerYear
+
+        onY =
+            onYear |> Maybe.andThen String.toInt
     in
     Maybe.map2
         (\min max ->
             Html.div
                 [ Html.Attributes.class "works-per-year" ]
                 (worksPerYear
-                    |> Dict.toList
-                    |> List.reverse
                     |> List.map
                         (\( year, amount ) ->
                             let
@@ -197,17 +203,17 @@ worksPerYearView worksPerYear onYear =
                             in
                             Html.a
                                 (Html.Attributes.style "font-size" (String.fromFloat (1 + normalized) ++ "em")
-                                    :: (if Just year /= onYear then
-                                            [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = year })) ]
+                                    :: (if Just year /= onY then
+                                            [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt year })) ]
 
                                         else
                                             []
                                        )
                                 )
-                                [ Html.text <| year ++ " (" ++ String.fromInt amount ++ ")" ]
+                                [ Html.text <| String.fromInt year ++ " (" ++ String.fromInt amount ++ ")" ]
                         )
                 )
         )
-        (List.minimum counts |> Maybe.map toFloat)
-        (List.maximum counts |> Maybe.map toFloat)
+        (List.minimum amounts |> Maybe.map toFloat)
+        (List.maximum amounts |> Maybe.map toFloat)
         |> Maybe.withDefault (Html.text "")
