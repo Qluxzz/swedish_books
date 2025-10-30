@@ -85,7 +85,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
             // Best case, we have an URI for the author and we use that as the id
             x.author.type === Type.URI
               ? getIdentifier(x.author.value) ??
-                throwError(`${x.author.value} dould not be converted to an id`)
+                throwError(`${x.author.value} could not be converted to an id`)
               : // Otherwise we use the ISNI if available
                 // And in last case we hash together the name and lifespan of the author
                 x.isni?.value ??
@@ -97,7 +97,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
           const workId =
             x.work.type === Type.URI
               ? getIdentifier(x.work.value) ??
-                throwError(`${x.work.value} dould not be converted to an id`)
+                throwError(`${x.work.value} could not be converted to an id`)
               : x.work.value
 
           valid.set(workId, {
@@ -123,15 +123,15 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
       { invalid: new Set<string>(), valid: new Map() }
     )
     .valid.values()
-    .map((x) => {
+    .map((book) => {
       // Clear isbn if invalid
-      for (const instance of x.instances) {
+      for (const instance of book.instances) {
         if (instance.isbn) {
           const { result, normalized } = isValidISBN(instance.isbn)
 
           if (!result) {
             console.error(
-              `Book instance ${instance.id} of ${x.title} by ${x.author} had an invalid ISBN (${instance.isbn}) `
+              `Book instance ${instance.id} of ${book.title} by ${book.author} had an invalid ISBN (${instance.isbn}) `
             )
 
             instance.isbn = undefined
@@ -141,7 +141,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
         }
       }
 
-      return x
+      return book
     })
     .toArray()
 }
@@ -161,10 +161,12 @@ function createFolderIfNotExists(path: string) {
 const rootPath = import.meta.dirname
 
 // Create cache folders
-createFolderIfNotExists(`${rootPath}/cache`)
-createFolderIfNotExists(`${rootPath}/cache/json-sparql`)
-createFolderIfNotExists(`${rootPath}/cache/json`)
-createFolderIfNotExists(`${rootPath}/cache/goodreads`)
+const cachePath = `${rootPath}/cache`
+
+createFolderIfNotExists(cachePath)
+createFolderIfNotExists(`${cachePath}/json-sparql`)
+createFolderIfNotExists(`${cachePath}/json`)
+createFolderIfNotExists(`${cachePath}/goodreads`)
 
 const sparqlQueue = new PQueue({ concurrency: 10 })
 const goodReadsQueue = new PQueue({ concurrency: 20 })

@@ -32,7 +32,7 @@ async function getFileOrDownload(
   fileName: string,
   url: string
 ): Promise<string> {
-  fileName = `${import.meta.dirname}/cache/${fileName}`
+  fileName = `${import.meta.dirname}/../cache/${fileName}`
 
   try {
     const disk = await fs.readFile(fileName)

@@ -10,8 +10,6 @@ const QUERY = (await readFile(`${import.meta.dirname}/query.rq`))
   // Remove all comments from query
   .replaceAll(/^.*#.*$\n?/gm, "")
 
-console.log(QUERY)
-
 async function loadLibrisSPARQLSearchResults(
   year: number
 ): Promise<SparqlResponse> {
