@@ -1,0 +1,24 @@
+{
+  "name": "swedish_books",
+  "version": "0.0.1",
+  "description": "Finds all swedish books published in given year",
+  "main": "test.ts",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "jsdom": "^27.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.7.2",
+    "p-queue": "^9.0.0",
+    "slugify": "^1.6.6",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "type": "module"
+}
