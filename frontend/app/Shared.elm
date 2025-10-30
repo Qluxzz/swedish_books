@@ -131,22 +131,7 @@ view sharedData page _ _ pageView =
               else
                 Html.text ""
             , Html.h1 []
-                [ Html.text <|
-                    (page.route
-                        |> Maybe.map
-                            (\route ->
-                                case route of
-                                    Route.Year__Number_ { number } ->
-                                        "Böcker för år " ++ number
-
-                                    Route.Index ->
-                                        "Gömda böcker"
-
-                                    Route.Author__Id___Name_ _ ->
-                                        "Böcker för författare"
-                            )
-                        |> Maybe.withDefault "Gömda böcker"
-                    )
+                [ Html.text pageView.title
                 ]
             ]
         , Html.main_ []

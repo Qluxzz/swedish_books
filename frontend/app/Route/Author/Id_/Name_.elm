@@ -83,13 +83,14 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app _ =
-    { title = app.data.author.name
+    let
+        title =
+            [ Just app.data.author.name, Book.lifeSpanView app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " "
+    in
+    { title = title
     , body =
         [ Html.section [ Html.Attributes.class "section" ]
-            [ Html.h2 [ Html.Attributes.class "section-title" ]
-                [ Html.text <| ([ Just app.data.author.name, Book.lifeSpanView app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " ") ]
-            , Html.p [ Html.Attributes.class "section-description" ] []
-            , Html.div
+            [ Html.div
                 [ Html.Attributes.class "book-grid" ]
                 (List.map (Book.view { linkToAuthor = False, linkToYear = True }) app.data.titles)
             ]

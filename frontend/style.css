@@ -60,7 +60,11 @@ main {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 var(--spacing-4);
+  padding: var(--spacing-12) var(--spacing-4);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
 }
 
 /* Header */
@@ -71,7 +75,7 @@ header {
   line-height: 1;
 
   background-color: var(--color-muted);
-  padding: var(--spacing-4);
+  padding: var(--spacing-8);
 
   h1 {
     font-family: var(--font-serif);
@@ -84,8 +88,6 @@ header {
 
 /* Section */
 section {
-  margin-bottom: var(--spacing-20);
-
   h2 {
     font-family: var(--font-serif);
     font-size: 2rem;
