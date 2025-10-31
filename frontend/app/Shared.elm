@@ -181,7 +181,7 @@ worksPerYearView worksPerYear onYear =
         (\min max ->
             Html.div
                 [ Html.Attributes.class "works-per-year" ]
-                (worksPerYear
+                ((worksPerYear
                     |> List.map
                         (\( year, amount ) ->
                             let
@@ -207,6 +207,10 @@ worksPerYearView worksPerYear onYear =
                                 )
                                 [ Html.text <| String.fromInt year ++ " (" ++ String.fromInt amount ++ ")" ]
                         )
+                 )
+                    -- This makes sure the last row doesn't have large holes between
+                    -- the items if fewer than a full row was left by forcing it to left align
+                    ++ [ Html.div [ Html.Attributes.style "flex-grow" "1" ] [] ]
                 )
         )
         (List.minimum amounts |> Maybe.map toFloat)
