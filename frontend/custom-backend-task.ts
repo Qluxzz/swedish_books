@@ -232,30 +232,39 @@ const countOfTitlesPerYear = database
   .prepare(
     `
 WITH ${ranked}, ${filterPopularAuthors}
-SELECT DISTINCT
-  year,
-  SUM(count) amount
-FROM (
-SELECT
-  b.year,
-  COUNT(*) count
-FROM books b
-INNER JOIN ranked r
-  ON b.id = r.book_id
-INNER JOIN popularity p
-  ON p.author_id = b.author_id
-GROUP BY b.year
-UNION ALL
-SELECT
-  b.year,
-  COUNT(*) count
-FROM books b
-INNER JOIN popularity p
-  ON p.author_id = b.author_id
-LEFT JOIN goodreads g
-  ON g.book_id = b.id
-WHERE g.ratings IS NULL OR g.ratings = 0
-GROUP BY b.year
+SELECT year, amount FROM (
+  SELECT DISTINCT
+    b.year,
+    COUNT(*) amount
+  FROM books b
+  INNER JOIN ranked r
+    ON b.id = r.book_id
+  INNER JOIN popularity p
+    ON p.author_id = b.author_id
+  INNER JOIN authors a
+    ON a.id = b.author_id
+  INNER JOIN goodreads g
+    ON g.book_id = b.id
+  LEFT JOIN book_covers bc
+    ON bc.book_id = b.id
+  GROUP BY b.year
+
+  UNION ALL
+
+  SELECT DISTINCT
+    b.year,
+    COUNT(*) amount
+  FROM books b
+  INNER JOIN popularity p
+    ON p.author_id = b.author_id
+  INNER JOIN authors a
+    ON a.id = b.author_id
+  LEFT JOIN goodreads g
+    ON g.book_id = b.id
+  LEFT JOIN book_covers bc
+    ON bc.book_id = b.id
+  WHERE (g.ratings IS NULL OR g.ratings = 0)
+  GROUP BY b.year
 )
 GROUP BY year
 ORDER BY year DESC
