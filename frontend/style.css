@@ -162,7 +162,7 @@ section {
   padding: var(--spacing-4);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
   flex: 1 1 0px;
   justify-content: end;
 }
@@ -172,7 +172,6 @@ section {
   font-size: 1.125rem;
   font-weight: bold;
   color: var(--color-card-foreground);
-  margin-bottom: var(--spacing-1);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
