@@ -10,7 +10,7 @@ import SiteConfig exposing (SiteConfig)
 
 config : SiteConfig
 config =
-    { canonicalUrl = "https://elm-pages.com"
+    { canonicalUrl = "https://qluxzz.github.io/swedish_books"
     , head = head
     }
 
@@ -18,7 +18,6 @@ config =
 head : BackendTask FatalError (List Head.Tag)
 head =
     [ Head.metaName "viewport" (Head.raw "width=device-width,initial-scale=1")
-    , Head.sitemapLink "/sitemap.xml"
     , Head.rootLanguage (LanguageTag.Language.sv |> LanguageTag.build LanguageTag.emptySubtags)
     ]
         |> BackendTask.succeed
