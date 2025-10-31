@@ -10,6 +10,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@6
+        with:
+          node-version: 22
       - name: Build page
         run: |
           cd frontend
