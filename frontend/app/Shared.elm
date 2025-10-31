@@ -187,10 +187,18 @@ worksPerYearView worksPerYear onYear =
                             let
                                 normalized =
                                     (toFloat amount - min) / (max - min)
+
+                                fontSize =
+                                    1 + normalized
+
+                                opacity =
+                                    normalized * 80 + 20
                             in
                             Html.a
-                                (Html.Attributes.style "font-size" (String.fromFloat (1 + normalized) ++ "em")
-                                    :: (if Just year /= onY then
+                                ([ Html.Attributes.style "font-size" (String.fromFloat fontSize ++ "em")
+                                 , Html.Attributes.style "opacity" (String.fromFloat opacity ++ "%")
+                                 ]
+                                    ++ (if Just year /= onY then
                                             [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt year })) ]
 
                                         else
