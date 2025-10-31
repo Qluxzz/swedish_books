@@ -54,7 +54,7 @@ data : RouteParams -> BackendTask.BackendTask FatalError Data
 data routeParams =
     BackendTask.Custom.run "getTitlesForYear"
         (Json.Encode.string routeParams.number)
-        (Json.Decode.map2 (\rated unrated -> Data rated unrated)
+        (Json.Decode.map2 Data
             (Json.Decode.field "ratedTitles" (Json.Decode.list Book.decode))
             (Json.Decode.field "unratedTitles" (Json.Decode.list Book.decode))
         )
@@ -81,6 +81,5 @@ pages : BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 pages =
     -- These are all years we currently have titles for
     List.range 1850 2024
-        |> List.map String.fromInt
-        |> List.map (\year -> { number = year })
+        |> List.map (\year -> { number = String.fromInt year })
         |> BackendTask.succeed
