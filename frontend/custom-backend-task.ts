@@ -4,49 +4,11 @@ const database = new DatabaseSync("../books.db", {
   readOnly: true,
 })
 
-/**
- * For ranked books (has data from Goodreads) we ignore the 10% most popular books
- */
-const ranked = `
-ranked AS (
-  SELECT 
-    author_id,
-    pct
-  FROM (
-    SELECT
-      author_id,
-      PERCENT_RANK() OVER (ORDER BY SUM(ratings) ASC) AS pct
-    FROM goodreads g
-    INNER JOIN books b
-      ON b.id = g.book_id 
-    WHERE ratings > 0
-    GROUP BY author_id
-  ) WHERE pct < 0.9
-)
-`
-
-/**
- * The more instances of books an author has, we count as more popular.
- * so then we filter out the most popular authors
- */
-const filterPopularAuthors = `
-popularity AS (
-  SELECT 
-    author_id,
-    pct
-  FROM (
-    SELECT
-      author_id,
-      PERCENT_RANK() OVER (ORDER BY SUM(instances) ASC) AS pct
-    FROM books GROUP BY author_id
-  ) WHERE pct < 0.955
-)`
-
 export async function getHomePageData() {
   const ratedTitles = database
     .prepare(
       `
-WITH ${ranked}, ${filterPopularAuthors},
+WITH
 ranked_books AS (
   SELECT
     b.id AS book_id,
@@ -64,8 +26,6 @@ ranked_books AS (
     (g.ratings * g.avg_rating * power((2025.0-b.year)/(2025.0-1850.0), 0.7)) AS rating,
     ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY (g.ratings * g.avg_rating * power((2025.0-b.year)/(2025.0-1850.0), 0.7)) DESC) AS rn
   FROM books b
-  INNER JOIN popularity p ON p.author_id = b.author_id
-  INNER JOIN ranked r ON r.author_id = b.author_id
   INNER JOIN goodreads g ON g.book_id = b.id
   INNER JOIN authors a ON a.id = b.author_id
   INNER JOIN book_covers bc ON bc.book_id = b.id
@@ -94,8 +54,7 @@ LIMIT 48;
   const unratedTitles = database
     .prepare(
       `
-WITH ${filterPopularAuthors},
-ranked_books AS (
+WITH ranked_books AS (
   SELECT
     b.id AS book_id,
     b.title,
@@ -106,10 +65,8 @@ ranked_books AS (
     b.year,
     bc.host AS image_host,
     bc.image_id AS image_id,
-    p.pct AS rating,
-    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY p.pct DESC) AS rn
+    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY RANDOM() DESC) AS rn
   FROM books b
-  INNER JOIN popularity p ON p.author_id = b.author_id
   LEFT JOIN goodreads g ON g.book_id = b.id
   INNER JOIN authors a ON a.id = b.author_id
   INNER JOIN book_covers bc ON bc.book_id = b.id
@@ -123,11 +80,10 @@ SELECT
   author_slug,
   year,
   image_host,
-  image_id,
-  rating
+  image_id
 FROM ranked_books
 WHERE rn = 1  -- keep only top book per author
-ORDER BY rating DESC
+ORDER BY RANDOM()
 LIMIT 48;
     `
     )
@@ -137,7 +93,6 @@ LIMIT 48;
 }
 
 const getRatedTitlesForYear = database.prepare(`
-WITH ${ranked}, ${filterPopularAuthors}
 SELECT DISTINCT
   b.title,
   a.id author_id,
@@ -151,10 +106,6 @@ SELECT DISTINCT
   bc.host image_host,
   bc.image_id image_id
 FROM books b
-INNER JOIN ranked r
-  ON b.author_id = r.author_id
-INNER JOIN popularity p
-  ON p.author_id = b.author_id
 INNER JOIN authors a
   ON a.id = b.author_id
 INNER JOIN goodreads g
@@ -168,7 +119,6 @@ ORDER BY bc.id IS NOT NULL DESC, (g.ratings * g.avg_rating) DESC
 
 const getUnratedTitlesForYear = database.prepare(
   `
-WITH ${filterPopularAuthors}
 SELECT DISTINCT
   b.title,
   a.id author_id,
@@ -179,8 +129,6 @@ SELECT DISTINCT
   bc.host image_host,
   bc.image_id image_id
 FROM books b
-INNER JOIN popularity p
-  ON p.author_id = b.author_id
 INNER JOIN authors a
   ON a.id = b.author_id
 LEFT JOIN goodreads g
@@ -188,7 +136,7 @@ LEFT JOIN goodreads g
 LEFT JOIN book_covers bc
   ON bc.book_id = b.id
 WHERE (g.ratings IS NULL OR g.ratings = 0) AND b.year = ?
-ORDER BY bc.id IS NOT NULL DESC, p.pct DESC, RANDOM()
+ORDER BY bc.id IS NOT NULL DESC, RANDOM()
     `
 )
 
@@ -202,20 +150,10 @@ export function getTitlesForYear(year: string) {
 const countOfTitlesPerYear = database
   .prepare(
     `
-WITH ${ranked}, ${filterPopularAuthors}
-  SELECT
+SELECT
   b.year,
   COUNT(DISTINCT b.id) AS amount
 FROM books b
-INNER JOIN popularity p
-  ON p.author_id = b.author_id
-LEFT JOIN goodreads g
-  ON g.book_id = b.id
-LEFT JOIN ranked r
-  ON b.author_id = r.author_id
-WHERE
-  -- Include both rated or unrated titles
-  (r.author_id IS NOT NULL OR g.ratings IS NULL OR g.ratings = 0)
 GROUP BY
   b.year
 ORDER BY
@@ -228,11 +166,7 @@ export function getCountOfTitlesPerYear() {
   return countOfTitlesPerYear
 }
 
-const authors = database
-  .prepare(
-    `WITH ${filterPopularAuthors} SELECT * FROM authors a INNER JOIN popularity p on a.id = p.author_id`
-  )
-  .all()
+const authors = database.prepare("SELECT * FROM authors").all()
 
 export function getAuthors() {
   return authors
@@ -260,7 +194,7 @@ LEFT JOIN goodreads g
 LEFT JOIN book_covers bc
   ON bc.book_id = b.id
 WHERE author_id = ? 
-ORDER BY IIF(g.ratings is not null, g.ratings * g.avg_rating, b.year) DESC
+ORDER BY b.year DESC
 `
 )
 

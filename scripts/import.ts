@@ -206,6 +206,10 @@ function authorHasValidLifeSpan(lifeSpan: string): {
   }
 }
 
+// Since we filter out all children's books earlier,
+// we might get books that are by children's authors but are not tagged as such
+const ignoredAuthors = ["Astrid Lindgren", "Gunilla Bergström", "Åke Holmberg"]
+
 const NO_BOOK_COVER_URL = "nophoto/book/111x148"
 function getImageId(url?: string): string | null {
   if (!url || url.includes(NO_BOOK_COVER_URL)) return null
@@ -227,6 +231,8 @@ for (const file of files) {
 
     const { valid, alive } = authorHasValidLifeSpan(book.lifeSpan)
     if (!valid || alive) continue
+
+    if (ignoredAuthors.includes(book.author)) continue
 
     insertAuthor.run(
       book.authorId,
@@ -276,5 +282,55 @@ for (const file of files) {
 }
 db.prepare("COMMIT").run()
 console.timeEnd("Import time")
+
+// Remove books by the most popular authors and highest ranked books
+// The more instances of books an author has, we count as more popular.
+// For ranked books (has data from Goodreads) we ignore the 10% most popular books
+
+const result = db
+  .prepare(
+    `
+WITH ranked AS (
+  SELECT 
+    author_id,
+    pct
+  FROM (
+    SELECT
+      author_id,
+      PERCENT_RANK() OVER (ORDER BY SUM(ratings) ASC) AS pct
+    FROM goodreads g
+    INNER JOIN books b
+      ON b.id = g.book_id 
+    WHERE ratings > 0
+    GROUP BY author_id
+  ) WHERE pct >= 0.9
+),
+popularity AS (
+  SELECT 
+    author_id,
+    pct
+  FROM (
+    SELECT
+      author_id,
+      PERCENT_RANK() OVER (ORDER BY SUM(instances) ASC) AS pct
+    FROM books GROUP BY author_id
+  ) WHERE pct >= 0.955
+)
+DELETE FROM books
+WHERE id IN (
+  SELECT id FROM books b
+  LEFT JOIN ranked r 
+    ON b.author_id = r.author_id
+  LEFT JOIN popularity p 
+    ON p.author_id = b.author_id 
+  WHERE 
+    r.author_id IS NOT NULL 
+    OR p.author_id IS NOT NULL
+)
+  `
+  )
+  .run()
+
+console.log(`Removed ${result.changes} books`)
 
 db.close()
