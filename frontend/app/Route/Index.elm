@@ -80,7 +80,7 @@ head :
 head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "Mindre kända Svenska originalverk"
+        , siteName = "Mindre kända svenska originalverk"
         , image =
             { url = [ "images", "icon-png.png" ] |> UrlPath.join |> Pages.Url.fromPath
             , alt = "elm-pages logo"
@@ -89,7 +89,7 @@ head _ =
             }
         , description = "Hitta svenska skönlitterära originalverk som många kanske inte känner till"
         , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
-        , title = "Mindre kända Svenska originalverk"
+        , title = "Mindre kända svenska originalverk"
         }
         |> Seo.website
 
@@ -99,7 +99,7 @@ view :
     -> Shared.Model
     -> View (PagesMsg Msg)
 view app _ =
-    { title = "Mindre kända Svenska originalverk"
+    { title = "Mindre kända svenska originalverk"
     , body =
         BookList.view { linkToAuthor = True, linkToYear = True } app.data.ratedBooks app.data.unratedBooks
             ++ [ Html.section [ Html.Attributes.class "section" ]

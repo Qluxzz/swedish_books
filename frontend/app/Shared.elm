@@ -1,14 +1,10 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), externalLink, template)
 
 import BackendTask exposing (BackendTask)
-import BackendTask.Custom
-import Dict
 import Effect exposing (Effect)
 import FatalError exposing (FatalError)
 import Html exposing (Html)
 import Html.Attributes
-import Json.Decode
-import Json.Encode
 import Pages.Flags
 import Pages.PageUrl exposing (PageUrl)
 import Route exposing (Route)
@@ -107,7 +103,7 @@ view :
     -> (Msg -> msg)
     -> View msg
     -> { body : List (Html msg), title : String }
-view sharedData page _ _ pageView =
+view _ page _ _ pageView =
     let
         isOnIndexPage =
             Maybe.map ((==) Route.Index) page.route |> Maybe.withDefault False
