@@ -17,7 +17,7 @@ jobs:
         run: |
           cd frontend
           npm install
-          npm run build > /dev/null
+          npm run build -- --base "/swedish_books" > /dev/null
 
       - name: Upload production artifacts
         uses: actions/upload-pages-artifact@v3
