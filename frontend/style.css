@@ -7,16 +7,10 @@
 
 :root {
   /* Color palette - aged paper and warm storage room tones */
-  --color-background: oklch(0.18 0.015 60);
   --color-foreground: oklch(0.92 0.01 60);
-  --color-card: oklch(0.22 0.02 55);
-  --color-card-foreground: oklch(0.88 0.015 60);
   --color-primary: oklch(0.68 0.15 45);
-  --color-primary-foreground: oklch(0.15 0.02 60);
   --color-muted: oklch(0.25 0.02 55);
   --color-muted-foreground: oklch(0.58 0.02 60);
-  --color-accent: oklch(0.55 0.12 35);
-  --color-border: oklch(0.32 0.025 55);
 
   /* Typography */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -24,22 +18,15 @@
   --font-mono: "Courier New", Courier, monospace;
 
   /* Spacing */
-  --spacing-1: 0.25rem;
-  --spacing-2: 0.5rem;
-  --spacing-3: 0.75rem;
   --spacing-4: 1rem;
   --spacing-6: 1.5rem;
   --spacing-8: 2rem;
   --spacing-12: 3rem;
-  --spacing-20: 5rem;
-
-  /* Border radius */
-  --radius: 0.25rem;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-background);
+  background-color: oklch(0.18 0.015 60);
   color: var(--color-foreground);
   line-height: 1.6;
   min-height: 100vh;
@@ -133,8 +120,8 @@ section {
 /* Book Card */
 .book-card {
   overflow: hidden;
-  background-color: var(--color-card);
-  border-radius: var(--radius);
+  background-color: oklch(0.22 0.02 55);
+  border-radius: 0.25rem;
 
   display: flex;
   flex-direction: column;
@@ -168,9 +155,10 @@ section {
 .book-title {
   font-family: var(--font-serif);
   font-weight: bold;
-  color: var(--color-card-foreground);
+  color: oklch(0.88 0.015 60);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-wrap: balance;
