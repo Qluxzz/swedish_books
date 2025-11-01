@@ -19,8 +19,8 @@ jobs:
           npm install
           npm run build > /dev/null
 
-          # Make all src/href asset paths relative
-          find . -type f -name "*.html" -print0 | xargs -0 sed -i '' -e 's/"\//"/g' || true
+          # Remove js file references and make all links relative
+          bash fix-build.sh
 
       - name: Upload production artifacts
         uses: actions/upload-pages-artifact@v3
