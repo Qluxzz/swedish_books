@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# elm-pages has a bug where serving the site under a sub path https://github.com/dillonkearns/elm-pages/issues/404 doesn't work
+# Since this site doesn't require any JavaScript,
+# we can fix this ourselves by removing all script tags
+# and prefixing all relative URLs with our subpath in the generated HTML files
+
 # Base path to add to relative URLs
 BASE_PATH="/swedish_books"
 
