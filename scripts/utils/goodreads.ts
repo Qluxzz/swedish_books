@@ -42,12 +42,12 @@ async function getByTitleAndAuthor(
   title: string,
   author: string
 ): Promise<Goodreads | null> {
-  const slug = slugify.default(`${title}-${author}`)
+  const slug = slugify.default(`${title}-${author}`, { lower: true })
 
   const search = encodeURIComponent(`${title} ${author}`)
 
   // A file name can't be longer than 255 bytes generally
-  const fileName = `goodreads/${slug.slice(0, 100)}.json`
+  const fileName = `goodreads/${slug.slice(0, 150)}.json`
   const url = `https://www.goodreads.com/book/auto_complete?format=json&q=${search}`
 
   const data = await getFileOrDownload(fileName, url)
