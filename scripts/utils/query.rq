@@ -31,7 +31,7 @@ SELECT
   FILTER NOT EXISTS { ?work :translationOf [] }
   FILTER NOT EXISTS { ?work :hasPart [ :translationOf [] ] }
   FILTER NOT EXISTS { 
-    ?work :contribution [ a :PrimaryContribution ; :role ?otherRole ]
+    ?work :contribution [ a :Contribution ; :role ?otherRole ]
     FILTER(?otherRole != <https://id.kb.se/relator/translator>)
   }
   # Ignore children's books
