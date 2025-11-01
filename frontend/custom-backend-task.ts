@@ -135,7 +135,7 @@ LEFT JOIN goodreads g
   ON g.book_id = b.id
 LEFT JOIN book_covers bc
   ON bc.book_id = b.id
-WHERE (g.ratings IS NULL OR g.ratings = 0) AND b.year = ?
+WHERE g.id IS NULL AND b.year = ?
 ORDER BY bc.id IS NOT NULL DESC, RANDOM()
     `
 )

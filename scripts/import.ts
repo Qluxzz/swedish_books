@@ -259,7 +259,7 @@ for (const file of files) {
     }
 
     // Insert goodreads data if exists
-    if (book.goodreads) {
+    if (book.goodreads && book.goodreads.ratingsCount > 0) {
       insertGoodreadsData.run(
         bookId,
         book.goodreads.numPages,
