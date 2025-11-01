@@ -20,7 +20,7 @@ jobs:
           npm run build > /dev/null
 
           # Make all src/href asset paths relative
-          find . -type f -name "*.html"-print0 | xargs -0 sed -i '' -e 's/"\//"/g'
+          find . -type f -name "*.html" -print0 | xargs -0 sed -i '' -e 's/"\//"/g'
 
       - name: Upload production artifacts
         uses: actions/upload-pages-artifact@v3
