@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises"
-import { getFileOrDownload } from "./helpers.ts"
+import { getFileOrDownload, log } from "./helpers.ts"
 
 const FORMAT = "application/sparql-results+json"
 
@@ -12,16 +12,23 @@ const QUERY = (await readFile(`${import.meta.dirname}/query.rq`))
 
 async function loadLibrisSPARQLSearchResults(
   year: number
-): Promise<SparqlResponse> {
-  const fileName = `json-sparql/${year}.json`
-  const url = BASE_URL.replace("FORMAT", encodeURIComponent(FORMAT)).replace(
-    "QUERY",
-    encodeURIComponent(QUERY.replace("|YEAR|", year.toString()))
-  )
+): Promise<SparqlResponse | null> {
+  try {
+    const fileName = `json-sparql/${year}.json`
+    const url = BASE_URL.replace("FORMAT", encodeURIComponent(FORMAT)).replace(
+      "QUERY",
+      encodeURIComponent(QUERY.replace("|YEAR|", year.toString()))
+    )
 
-  const data = await getFileOrDownload(fileName, url)
+    const data = await getFileOrDownload(fileName, url)
 
-  return JSON.parse(data) as SparqlResponse
+    return JSON.parse(data) as SparqlResponse
+  } catch (error) {
+    log(
+      `${year}: Failed to get SPARQL data. Rerun to try again. Error was ${error}`
+    )
+    return null
+  }
 }
 
 export interface SparqlResponse {

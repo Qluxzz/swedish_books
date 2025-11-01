@@ -182,7 +182,10 @@ const parsedTitlesPerYear: { year: number; titles: Release[] }[] = []
 
 sparqlQueue.on(
   "completed",
-  ({ year, data }: { year: number; data: SparqlResponse }) => {
+  ({ year, data }: { year: number; data: SparqlResponse | null }) => {
+    if (!data) return
+
+    log(`${year}: Finished loading data from SPARQL endpoint`)
     const titles = parseSparqlResult(data)
     parsedTitlesPerYear.push({ year, titles })
 

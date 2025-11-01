@@ -1,4 +1,4 @@
-import { getFileOrDownload } from "./helpers.ts"
+import { getFileOrDownload, log } from "./helpers.ts"
 import slugify from "slugify"
 
 interface Goodreads {
@@ -77,9 +77,16 @@ async function getByTitleAndAuthor(
 async function getDataFromGoodReads<
   T extends { isbn?: string; title: string; author: string }
 >(book: T): Promise<Goodreads | null> {
-  return book.isbn
-    ? await getByISBN(book.isbn)
-    : await getByTitleAndAuthor(book.title, book.author)
+  try {
+    return book.isbn
+      ? await getByISBN(book.isbn)
+      : await getByTitleAndAuthor(book.title, book.author)
+  } catch (error) {
+    log(
+      `Something went wrong when getting info for book ${book.title} ${book.author} ${book.isbn}. Error was: ${error}`
+    )
+    return null
+  }
 }
 
 export { type Goodreads, getDataFromGoodReads }
