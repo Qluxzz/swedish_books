@@ -34,8 +34,7 @@ type Msg
 
 
 type alias Data =
-    { worksPerYear : List ( Int, Int )
-    }
+    ()
 
 
 type SharedMsg
@@ -83,17 +82,7 @@ subscriptions _ _ =
 
 data : BackendTask FatalError Data
 data =
-    BackendTask.Custom.run "getCountOfTitlesPerYear"
-        Json.Encode.null
-        (Json.Decode.map Data
-            (Json.Decode.list
-                (Json.Decode.map2 Tuple.pair
-                    (Json.Decode.field "year" Json.Decode.int)
-                    (Json.Decode.field "amount" Json.Decode.int)
-                )
-            )
-        )
-        |> BackendTask.allowFatal
+    BackendTask.succeed ()
 
 
 linkToHomePage : Html msg
@@ -136,21 +125,7 @@ view sharedData page _ _ pageView =
             ]
         , Html.main_ []
             [ Html.div [ Html.Attributes.class "container" ]
-                (pageView.body
-                    ++ [ Html.section [ Html.Attributes.class "section" ]
-                            [ Html.h2 [ Html.Attributes.class "section-title" ]
-                                [ Html.text "Hitta titlar per år" ]
-                            , worksPerYearView sharedData.worksPerYear
-                                (case page.route of
-                                    Just (Route.Year__Number_ { number }) ->
-                                        Just number
-
-                                    _ ->
-                                        Nothing
-                                )
-                            ]
-                       ]
-                )
+                pageView.body
             ]
         , Html.footer []
             [ Html.span []
@@ -166,53 +141,3 @@ view sharedData page _ _ pageView =
         ]
     , title = pageView.title
     }
-
-
-worksPerYearView : List ( Int, Int ) -> Maybe String -> Html.Html msg
-worksPerYearView worksPerYear onYear =
-    let
-        amounts =
-            List.map Tuple.second worksPerYear
-
-        onY =
-            onYear |> Maybe.andThen String.toInt
-    in
-    Maybe.map2
-        (\min max ->
-            Html.div
-                [ Html.Attributes.class "works-per-year" ]
-                ((worksPerYear
-                    |> List.map
-                        (\( year, amount ) ->
-                            let
-                                normalized =
-                                    (toFloat amount - min) / (max - min)
-
-                                fontSize =
-                                    1 + normalized
-
-                                opacity =
-                                    normalized * 80 + 20
-                            in
-                            Html.a
-                                ([ Html.Attributes.style "font-size" (String.fromFloat fontSize ++ "em")
-                                 , Html.Attributes.style "opacity" (String.fromFloat opacity ++ "%")
-                                 ]
-                                    ++ (if Just year /= onY then
-                                            [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt year })) ]
-
-                                        else
-                                            []
-                                       )
-                                )
-                                [ Html.text <| String.fromInt year ++ " (" ++ String.fromInt amount ++ ")" ]
-                        )
-                 )
-                    -- This makes sure the last row doesn't have large holes between
-                    -- the items if fewer than a full row was left by forcing it to left align
-                    ++ [ Html.div [ Html.Attributes.style "flex-grow" "1" ] [] ]
-                )
-        )
-        (List.minimum amounts |> Maybe.map toFloat)
-        (List.maximum amounts |> Maybe.map toFloat)
-        |> Maybe.withDefault (Html.text "")

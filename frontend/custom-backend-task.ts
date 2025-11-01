@@ -46,7 +46,7 @@ SELECT
 FROM ranked_books
 WHERE rn = 1  -- keep only top book per author
 ORDER BY rating DESC
-LIMIT 48;
+LIMIT 24;
     `
     )
     .all()
@@ -84,12 +84,27 @@ SELECT
 FROM ranked_books
 WHERE rn = 1  -- keep only top book per author
 ORDER BY RANDOM()
-LIMIT 48;
+LIMIT 24;
     `
     )
     .all()
 
-  return { ratedTitles, unratedTitles }
+  const titlesPerYear = database
+    .prepare(
+      `
+SELECT
+  b.year,
+  COUNT(DISTINCT b.id) AS amount
+FROM books b
+GROUP BY
+  b.year
+ORDER BY
+  b.year DESC;
+`
+    )
+    .all()
+
+  return { ratedTitles, unratedTitles, titlesPerYear }
 }
 
 const getRatedTitlesForYear = database.prepare(`
@@ -145,25 +160,6 @@ export function getTitlesForYear(year: string) {
   const unratedTitles = getUnratedTitlesForYear.all(year)
 
   return { ratedTitles, unratedTitles }
-}
-
-const countOfTitlesPerYear = database
-  .prepare(
-    `
-SELECT
-  b.year,
-  COUNT(DISTINCT b.id) AS amount
-FROM books b
-GROUP BY
-  b.year
-ORDER BY
-  b.year DESC;
-`
-  )
-  .all()
-
-export function getCountOfTitlesPerYear() {
-  return countOfTitlesPerYear
 }
 
 const authors = database.prepare("SELECT * FROM authors").all()
