@@ -127,7 +127,7 @@ view { linkToAuthor, linkToYear } book =
             case baseModel.imageUrl of
                 Just u ->
                     Html.div [ Html.Attributes.class "book-cover " ]
-                        [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ baseModel.title ] [] ]
+                        [ Html.a [ Html.Attributes.href url ] [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ baseModel.title ] [] ] ]
 
                 Nothing ->
                     Html.text ""
