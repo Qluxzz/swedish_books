@@ -13,7 +13,7 @@ interface Release {
   /**
    * These are all found instances of a work, this is usually re-pressings and new editions
    */
-  instances: Set<Instance>
+  instances: Instance[]
   goodreads?: Goodreads
 }
 

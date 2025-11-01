@@ -74,12 +74,21 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
         const existing = valid.get(x.work.value)
         if (existing) {
           existing.genres.add(x.genre.value)
-          existing.instances.add({
-            id: x.instance.value,
-            bib: x.bib?.value,
-            imageHost: x.imageHost?.value,
-            isbn: x.isbn?.value,
-          })
+
+          if (
+            !existing.instances.some(
+              (i) =>
+                i.id === x.instance.value ||
+                i.bib === x.bib?.value ||
+                i.isbn === x.isbn?.value
+            )
+          )
+            existing.instances.push({
+              id: x.instance.value,
+              bib: x.bib?.value,
+              imageHost: x.imageHost?.value,
+              isbn: x.isbn?.value,
+            })
         } else {
           const authorId =
             // Best case, we have an URI for the author and we use that as the id
@@ -107,14 +116,14 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
             author: `${x.givenName.value} ${x.familyName.value}`,
             lifeSpan: x.lifeSpan?.value,
             genres: new Set<string>([x.genre.value]),
-            instances: new Set<Instance>([
+            instances: [
               {
                 id: x.instance.value,
                 bib: x.bib?.value,
                 imageHost: x.imageHost?.value,
                 isbn: x.isbn?.value,
               },
-            ]),
+            ],
           })
         }
 
@@ -124,7 +133,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
     )
     .valid.values()
     .map((book) => {
-      // Clear isbn if invalid
+      // Clear isbn if invalid, will then be looked up using title and author instead
       for (const instance of book.instances) {
         if (instance.isbn) {
           const { result, normalized } = isValidISBN(instance.isbn)
