@@ -87,7 +87,7 @@ head _ =
             , dimensions = Nothing
             , mimeType = Nothing
             }
-        , description = "Hitta svenska skönlitterära originalverk som många kanske inte känner till"
+        , description = "Hitta svenska skönlitterära originalverk som du kanske inte känner till"
         , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
         , title = "Mindre kända svenska originalverk"
         }
