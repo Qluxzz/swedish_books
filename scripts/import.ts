@@ -39,7 +39,6 @@ CREATE TABLE books (
   title TEXT NOT NULL,
   author_id INTEGER NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
-  isbn TEXT,
   instances INTEGER NOT NULL DEFAULT 1,
   UNIQUE (title, author_id)
 );
@@ -332,5 +331,9 @@ WHERE id IN (
   .run()
 
 console.log(`Removed ${result.changes} books`)
+
+console.time("vaccum")
+db.exec("VACUUM;")
+console.timeEnd("vaccum")
 
 db.close()
