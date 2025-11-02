@@ -103,7 +103,7 @@ view { linkToAuthor, linkToYear } book =
                         [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ book.title ] [] ]
 
                     Nothing ->
-                        []
+                        [ Html.text "Inget omslag hittades" ]
                 )
     in
     Html.article [ Html.Attributes.class "book-card", Html.Attributes.tabindex 0 ]
