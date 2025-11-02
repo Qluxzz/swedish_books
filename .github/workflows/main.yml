@@ -19,9 +19,6 @@ jobs:
           npm install
           npm run build > /dev/null
 
-          # Remove js file references and make all links relative
-          bash fix-build.sh
-
       - name: Upload production artifacts
         uses: actions/upload-pages-artifact@v3
         with:
