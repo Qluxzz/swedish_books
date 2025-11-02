@@ -124,7 +124,7 @@ view { linkToAuthor, linkToYear } book =
                         Html.text ""
                 ]
             ]
-        , Html.button [ Html.Attributes.class "find" ] [ Html.text "Hitta boken!" ]
+        , Html.button [ Html.Attributes.class "find", Html.Attributes.tabindex 0 ] [ Html.text "Hitta boken!" ]
         , links book
         ]
 
