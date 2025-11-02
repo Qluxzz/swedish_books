@@ -168,6 +168,11 @@ bokusUrl { title, author } =
     "https://www.bokus.com/cgi-bin/product_search.cgi?ac_used=no&search_word=" ++ title ++ " " ++ author.name
 
 
+bokBorsenUrl : Book -> String
+bokBorsenUrl { title, author } =
+    "https://www.bokborsen.se/?q=" ++ title ++ " " ++ author.name
+
+
 links : Book -> Html.Html msg
 links book =
     let
@@ -179,7 +184,7 @@ links book =
                 Nothing ->
                     []
             )
-                ++ [ ( "Libris", librisUrl book ), ( "Adlibris", adlibrisUrl book ), ( "Bokus", bokusUrl book ) ]
+                ++ [ ( "Libris", librisUrl book ), ( "Bokbörsen", bokBorsenUrl book ), ( "Adlibris", adlibrisUrl book ), ( "Bokus", bokusUrl book ) ]
     in
     Html.div [ Html.Attributes.class "links" ]
         [ Html.ul []
