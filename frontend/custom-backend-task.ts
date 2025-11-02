@@ -11,7 +11,7 @@ export async function getHomePageData() {
 WITH
 ranked_books AS (
   SELECT
-    b.id AS book_id,
+    b.id,
     b.title,
     a.id AS author_id,
     a.name AS author_name,
@@ -31,6 +31,7 @@ ranked_books AS (
   INNER JOIN book_covers bc ON bc.book_id = b.id
 )
 SELECT
+  id,
   title,
   author_id,
   author_name,
@@ -56,7 +57,7 @@ LIMIT 24;
       `
 WITH ranked_books AS (
   SELECT
-    b.id AS book_id,
+    b.id,
     b.title,
     a.id AS author_id,
     a.name AS author_name,
@@ -73,6 +74,7 @@ WITH ranked_books AS (
   WHERE g.id is NULL
 )
 SELECT
+  id,
   title,
   author_id,
   author_name,
@@ -109,6 +111,7 @@ ORDER BY
 
 const getRatedTitlesForYear = database.prepare(`
 SELECT DISTINCT
+  b.id,
   b.title,
   a.id author_id,
   a.name author_name,
@@ -135,6 +138,7 @@ ORDER BY bc.id IS NOT NULL DESC, (g.ratings * g.avg_rating) DESC
 const getUnratedTitlesForYear = database.prepare(
   `
 SELECT DISTINCT
+  b.id,
   b.title,
   a.id author_id,
   a.name author_name,
@@ -171,6 +175,7 @@ export function getAuthors() {
 const getAllTitlesForAuthor = database.prepare(
   `
 SELECT DISTINCT
+  b.id,
   b.title,
   a.id author_id,
   a.name author_name,

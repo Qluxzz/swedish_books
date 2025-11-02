@@ -11,7 +11,8 @@ import Shared
 
 
 type alias Book =
-    { title : String
+    { id : Int
+    , title : String
     , author : Author
     , year : Int
     , imageUrl : Maybe String
@@ -59,8 +60,9 @@ toImageUrl host id =
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
-            { title = title
+        (\id title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
+            { id = id
+            , title = title
             , author = { id = authorId, name = authorName, slug = authorSlug, lifeSpan = lifeSpan }
             , year = year
             , imageUrl =
@@ -73,6 +75,7 @@ decode =
                     bookUrl
             }
         )
+        |> Serializer.Json.Extra.andMap (Json.Decode.field "id" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "title" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_id" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_name" Json.Decode.string)
@@ -103,7 +106,7 @@ view { linkToAuthor, linkToYear } book =
                         []
                 )
     in
-    Html.article [ Html.Attributes.class "book-card" ]
+    Html.article [ Html.Attributes.class "book-card", Html.Attributes.tabindex 0 ]
         [ image
         , Html.div [ Html.Attributes.class "book-info" ]
             [ Html.div [ Html.Attributes.class "book-details" ]
@@ -124,7 +127,10 @@ view { linkToAuthor, linkToYear } book =
                         Html.text ""
                 ]
             ]
-        , Html.button [ Html.Attributes.class "find", Html.Attributes.tabindex 0 ] [ Html.text "Hitta boken!" ]
+        , Html.input
+            [ Html.Attributes.type_ "checkbox", Html.Attributes.id <| "show-links-" ++ String.fromInt book.id, Html.Attributes.class "find" ]
+            []
+        , Html.label [ Html.Attributes.class "find", Html.Attributes.for <| "show-links-" ++ String.fromInt book.id ] [ Html.text "Hitta boken!" ]
         , links book
         ]
 
