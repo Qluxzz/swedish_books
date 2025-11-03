@@ -16,6 +16,7 @@ import LanguageTag.Region
 import MimeType exposing (MimeText(..))
 import Pages.Url
 import PagesMsg exposing (PagesMsg)
+import PaginationResult
 import Route
 import RouteBuilder exposing (App, StatelessRoute)
 import Shared
@@ -101,14 +102,25 @@ view :
 view app _ =
     { title = "Mindre kända svenska originalverk"
     , body =
-        BookList.view { linkToAuthor = True, linkToYear = True } app.data.ratedBooks app.data.unratedBooks
-            ++ [ Html.section [ Html.Attributes.class "section" ]
-                    [ Html.h2 [ Html.Attributes.class "section-title" ]
-                        [ Html.text "Hitta titlar per år" ]
-                    , Html.p [ Html.Attributes.class "section-description" ] []
-                    , titlesPerYearView app.data.titlesPerYear Nothing
-                    ]
-               ]
+        [ Html.section [ Html.Attributes.class "section" ]
+            [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Betygsatta böcker" ]
+            , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa böcker hittades på Goodreads" ]
+            , Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.ratedBooks)
+            , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.Betygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla betygsatta böcker" ] ]
+            ]
+        , Html.section [ Html.Attributes.class "section" ]
+            [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text "Mysterierna" ]
+            , Html.p [ Html.Attributes.class "section-description" ] [ Html.text "Dessa böcker är inte ens betygsatta, klicka på en för att läsa mer om den" ]
+            , Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.unratedBooks)
+            , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.EjBetygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla ej betygsatta böcker" ] ]
+            ]
+        , Html.section [ Html.Attributes.class "section" ]
+            [ Html.h2 [ Html.Attributes.class "section-title" ]
+                [ Html.text "Hitta titlar per år" ]
+            , Html.p [ Html.Attributes.class "section-description" ] []
+            , titlesPerYearView app.data.titlesPerYear Nothing
+            ]
+        ]
     }
 
 

@@ -1,14 +1,47 @@
-import { DatabaseSync } from "node:sqlite"
+import { DatabaseSync, StatementSync } from "node:sqlite"
 
 const database = new DatabaseSync("../books.db", {
   readOnly: true,
 })
 
-export async function getHomePageData() {
-  const ratedTitles = database
+const PAGE_SIZE = 24
+
+// This is the first page for both rated and unrated titles
+// But we still say when browsing the respective categories that we're starting from page one again
+export async function getHomePageData(pageSize: number | null = PAGE_SIZE) {
+  pageSize ??= PAGE_SIZE
+
+  const titlesPerYear = database
     .prepare(
       `
-WITH
+SELECT
+  b.year,
+  COUNT(DISTINCT b.id) AS amount
+FROM books b
+GROUP BY
+  b.year
+ORDER BY
+  b.year DESC;
+`
+    )
+    .all()
+
+  const ratedTitles = database
+    .prepare(`${ratedTitlesQuery} LIMIT @skip, @take`)
+    .all({ skip: 0, take: PAGE_SIZE })
+
+  const unratedTitles = database
+    .prepare(`${unratedTitlesQuery} LIMIT @skip, @take`)
+    .all({ skip: 0, take: PAGE_SIZE })
+
+  return {
+    ratedTitles,
+    unratedTitles,
+    titlesPerYear: titlesPerYear,
+  }
+}
+
+const ratedTitlesQuery = `WITH
 ranked_books AS (
   SELECT
     b.id,
@@ -28,7 +61,7 @@ ranked_books AS (
   FROM books b
   INNER JOIN goodreads g ON g.book_id = b.id
   INNER JOIN authors a ON a.id = b.author_id
-  INNER JOIN book_covers bc ON bc.book_id = b.id
+  LEFT JOIN book_covers bc ON bc.book_id = b.id
 )
 SELECT
   id,
@@ -46,16 +79,45 @@ SELECT
   rating
 FROM ranked_books
 WHERE rn = 1  -- keep only top book per author
-ORDER BY rating DESC
-LIMIT 24;
-    `
-    )
-    .all()
+ORDER BY image_host IS NULL, rating DESC`
 
-  const unratedTitles = database
-    .prepare(
-      `
-WITH ranked_books AS (
+export async function getRatedTitles(page: number) {
+  const pageSize = PAGE_SIZE
+
+  return createPaginationResult(
+    database.prepare(`${ratedTitlesQuery} LIMIT @skip, @take`),
+    page,
+    pageSize
+  )
+}
+
+export async function getRatedTitlesPageCount() {
+  const count =
+    database.prepare(`SELECT COUNT(*) count FROM (${ratedTitlesQuery})`).get()
+      ?.count ?? throwError("Failed to get count of rated titles")
+
+  return Math.ceil(count / PAGE_SIZE) - 1
+}
+
+export async function getUnratedTitlesPageCount() {
+  const result = database
+    .prepare(`SELECT COUNT(*) count FROM (${unratedTitlesQuery})`)
+    .get()
+
+  return Math.ceil(result.count / PAGE_SIZE) - 1
+}
+
+export async function getUnratedTitles(page: number) {
+  const pageSize = PAGE_SIZE
+
+  return createPaginationResult(
+    database.prepare(`${unratedTitlesQuery} LIMIT @skip, @take`),
+    page,
+    pageSize
+  )
+}
+
+const unratedTitlesQuery = `WITH ranked_books AS (
   SELECT
     b.id,
     b.title,
@@ -64,13 +126,14 @@ WITH ranked_books AS (
     a.life_span AS author_life_span,
     a.slug AS author_slug,
     b.year,
+    b.instances,
     bc.host AS image_host,
     bc.image_id AS image_id,
     ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY RANDOM() DESC) AS rn
   FROM books b
   LEFT JOIN goodreads g ON g.book_id = b.id
   INNER JOIN authors a ON a.id = b.author_id
-  INNER JOIN book_covers bc ON bc.book_id = b.id
+  LEFT JOIN book_covers bc ON bc.book_id = b.id
   WHERE g.id is NULL
 )
 SELECT
@@ -81,35 +144,18 @@ SELECT
   author_life_span,
   author_slug,
   year,
+  instances,
   image_host,
   image_id
 FROM ranked_books
 WHERE rn = 1  -- keep only top book per author
-ORDER BY RANDOM()
-LIMIT 24;
-    `
-    )
-    .all()
+ORDER BY image_host IS NULL, instances DESC, RANDOM()
+`
 
-  const titlesPerYear = database
+export function getTitlesForYear(year: string) {
+  const ratedTitles = database
     .prepare(
       `
-SELECT
-  b.year,
-  COUNT(DISTINCT b.id) AS amount
-FROM books b
-GROUP BY
-  b.year
-ORDER BY
-  b.year DESC;
-`
-    )
-    .all()
-
-  return { ratedTitles, unratedTitles, titlesPerYear }
-}
-
-const getRatedTitlesForYear = database.prepare(`
 SELECT DISTINCT
   b.id,
   b.title,
@@ -133,10 +179,13 @@ LEFT JOIN book_covers bc
 WHERE 
   b.year = ?
 ORDER BY bc.id IS NOT NULL DESC, (g.ratings * g.avg_rating) DESC
-`)
+`
+    )
+    .all(year)
 
-const getUnratedTitlesForYear = database.prepare(
-  `
+  const unratedTitles = database
+    .prepare(
+      `
 SELECT DISTINCT
   b.id,
   b.title,
@@ -157,11 +206,8 @@ LEFT JOIN book_covers bc
 WHERE g.id IS NULL AND b.year = ?
 ORDER BY bc.id IS NOT NULL DESC, RANDOM()
     `
-)
-
-export function getTitlesForYear(year: string) {
-  const ratedTitles = getRatedTitlesForYear.all(year)
-  const unratedTitles = getUnratedTitlesForYear.all(year)
+    )
+    .all(year)
 
   return { ratedTitles, unratedTitles }
 }
@@ -223,4 +269,20 @@ export function getAvailableYears() {
 
 function throwError(message: string): never {
   throw Error(message)
+}
+
+function createPaginationResult(
+  statement: StatementSync,
+  page: number,
+  pageSize: number
+) {
+  const data = statement.all({
+    skip: (page - 1) * pageSize,
+    take: pageSize + 1,
+  })
+
+  return {
+    data: data.slice(0, pageSize),
+    hasMore: data.length > pageSize,
+  }
 }

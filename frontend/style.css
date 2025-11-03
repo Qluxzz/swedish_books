@@ -85,6 +85,16 @@ section {
     color: var(--color-muted-foreground);
     text-wrap: pretty;
   }
+
+  .see-all {
+    margin-top: 10px;
+    font-size: 1.5rem;
+    text-align: center;
+
+    a {
+      color: var(--color-muted-foreground);
+    }
+  }
 }
 
 .icon-star {
@@ -271,6 +281,21 @@ footer {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.page-selector {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+
+  span {
+    font-size: 2rem;
+    font-weight: bold;
+    text-decoration: none;
+  }
 }
 
 a.back {
