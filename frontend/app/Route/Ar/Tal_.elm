@@ -1,4 +1,4 @@
-module Route.Year.Number_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
+module Route.Ar.Tal_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
 {-|
 
@@ -10,7 +10,7 @@ import BackendTask
 import BackendTask.Custom
 import Book
 import BookList
-import FatalError exposing (FatalError)
+import FatalError
 import Head
 import Json.Decode
 import Json.Encode
@@ -29,17 +29,15 @@ type alias Msg =
 
 
 type alias RouteParams =
-    { number : String }
+    { tal : String }
 
 
 route : RouteBuilder.StatelessRoute RouteParams Data ActionData
 route =
     RouteBuilder.preRender
-        { data = data
-        , pages = pages
-        , head = head
-        }
-        |> RouteBuilder.buildNoState { view = view }
+        { data = data, pages = pages, head = head }
+        |> RouteBuilder.buildNoState
+            { view = view }
 
 
 type alias Data =
@@ -50,10 +48,10 @@ type alias ActionData =
     BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 
 
-data : RouteParams -> BackendTask.BackendTask FatalError Data
+data : RouteParams -> BackendTask.BackendTask FatalError.FatalError Data
 data routeParams =
     BackendTask.Custom.run "getTitlesForYear"
-        (Json.Encode.string routeParams.number)
+        (Json.Encode.string routeParams.tal)
         (Json.Decode.map2 Data
             (Json.Decode.field "ratedTitles" (Json.Decode.list Book.decode))
             (Json.Decode.field "unratedTitles" (Json.Decode.list Book.decode))
@@ -69,9 +67,9 @@ head app =
 view :
     RouteBuilder.App Data ActionData RouteParams
     -> Shared.Model
-    -> View.View (PagesMsg.PagesMsg ())
+    -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = "Böcker för år " ++ app.routeParams.number
+    { title = "Böcker för år " ++ app.routeParams.tal
     , body =
         BookList.view { linkToYear = False, linkToAuthor = True } app.data.ratedBooks app.data.unratedBooks
     }
@@ -79,7 +77,10 @@ view app shared =
 
 pages : BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 pages =
-    -- These are all years we currently have titles for
-    List.range 1850 2024
-        |> List.map (\year -> { number = String.fromInt year })
-        |> BackendTask.succeed
+    BackendTask.Custom.run "getAvailableYears"
+        Json.Encode.null
+        (Json.Decode.map2 (\min max -> List.range min max |> List.map (\year -> { tal = String.fromInt year }))
+            (Json.Decode.field "min" Json.Decode.int)
+            (Json.Decode.field "max" Json.Decode.int)
+        )
+        |> BackendTask.allowFatal

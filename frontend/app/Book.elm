@@ -142,7 +142,7 @@ bookAuthor linkToAuthor { id, name, slug, lifeSpan } =
             Html.text <| ([ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ")
     in
     if linkToAuthor then
-        Html.a [ Html.Attributes.href (Route.toString (Route.Author__Id___Name_ { id = String.fromInt id, name = slug })), Html.Attributes.class "book-author" ] [ displayName ]
+        Html.a [ Html.Attributes.href (Route.toString (Route.Forfattare__Id___Namn_ { id = String.fromInt id, namn = slug })), Html.Attributes.class "book-author" ] [ displayName ]
 
     else
         Html.span [] [ displayName ]
@@ -204,7 +204,7 @@ yearView year createLink =
             Html.span [ Html.Attributes.class "book-year" ] [ Html.text <| String.fromInt year ]
     in
     if createLink then
-        Html.a [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt year })) ] [ y ]
+        Html.a [ Html.Attributes.href (Route.toString (Route.Ar__Tal_ { tal = String.fromInt year })) ] [ y ]
 
     else
         y

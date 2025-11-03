@@ -1,4 +1,4 @@
-module Route.Author.Id_.Name_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
+module Route.Forfattare.Id_.Namn_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
 {-|
 
@@ -30,7 +30,7 @@ type alias Msg =
 
 
 type alias RouteParams =
-    { id : String, name : String }
+    { id : String, namn : String }
 
 
 route : RouteBuilder.StatelessRoute RouteParams Data ActionData

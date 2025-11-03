@@ -143,7 +143,7 @@ titlesPerYearView titlesPerYear onYear =
                                  , Html.Attributes.style "opacity" (String.fromFloat opacity ++ "%")
                                  ]
                                     ++ (if Just year /= onY then
-                                            [ Html.Attributes.href (Route.toString (Route.Year__Number_ { number = String.fromInt year })) ]
+                                            [ Html.Attributes.href (Route.toString (Route.Ar__Tal_ { tal = String.fromInt year })) ]
 
                                         else
                                             []

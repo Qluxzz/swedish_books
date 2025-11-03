@@ -195,7 +195,7 @@ LEFT JOIN goodreads g
 LEFT JOIN book_covers bc
   ON bc.book_id = b.id
 WHERE author_id = ? 
-ORDER BY b.year DESC
+ORDER BY b.year ASC
 `
 )
 
@@ -213,6 +213,12 @@ export function getTitlesForAuthor(authorId: string) {
     author: authorInfo,
     titles: titles,
   }
+}
+
+export function getAvailableYears() {
+  return database
+    .prepare("SELECT DISTINCT MIN(year) min, MAX(year) max FROM books")
+    .get()
 }
 
 function throwError(message: string): never {
