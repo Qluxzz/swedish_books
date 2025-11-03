@@ -41,12 +41,10 @@ imageHostToUrl =
         , ( "bokrondellen"
           , "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/bokrondellen/isbn/{ID}/{ID}.jpg/orginal"
           )
-        , ( "author"
-          , "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/author/libris-bib/{ID}/{ID}.jpg/orginal"
-          )
         , ( "goodreads"
           , "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/{ID}._SX200_.jpg"
           )
+        , ( "kb", "https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/kb/libris-bib/{ID}/{ID}/orginal" )
         ]
 
 

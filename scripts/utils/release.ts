@@ -14,14 +14,20 @@ interface Release {
    * These are all found instances of a work, this is usually re-pressings and new editions
    */
   instances: Instance[]
+  images: Image[]
   goodreads?: Goodreads
+}
+
+interface Image {
+  bib?: string
+  isbn?: string
+  host: string
 }
 
 interface Instance {
   id: string
   bib?: string
-  imageHost?: string
   isbn?: string
 }
 
-export type { Release, Instance }
+export type { Release, Instance, Image }

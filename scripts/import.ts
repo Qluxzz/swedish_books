@@ -4,7 +4,7 @@
 
 import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
-import { Instance, Release } from "./utils/release.ts"
+import { Image, Release } from "./utils/release.ts"
 import { getIdentifier, throwError } from "./utils/helpers.ts"
 import slugify from "slugify"
 import path from "node:path"
@@ -103,81 +103,46 @@ const currentYear = new Date().getFullYear()
 const yearRegex = /\d{4}/g
 
 function getBookCover(
-  instance: Instance,
+  image: Image,
   book: Release
 ): { host: string; id: string } | null {
-  if (!instance.imageHost) return null
-
   const host =
-    instance.imageHost.split("/").pop() ??
-    throwError("Failed to get image host")
+    image.host.split("/").pop() ?? throwError("Failed to get image host")
 
   switch (host) {
     case "tomasgift":
-      if (!instance.bib)
-        throw new Error("Image requires a bib, but instance doesn't have any!")
+    case "kb":
+      if (!image.bib)
+        throw new Error("Image requires a bib, but image doesn't have any!")
       return {
         host: host,
-        id: getIdentifier(instance.bib) ?? throwError("Failed to get bib id"),
+        id: getIdentifier(image.bib) ?? throwError("Failed to get bib id"),
       }
-    case "author":
-      return {
-        host: host,
-        id:
-          instance.isbn ??
-          getIdentifier(instance.id) ??
-          throwError(
-            `Instance ${
-              instance.id
-            } did not have an ISBN, and we couldn't parse the id, for book ${JSON.stringify(
-              book
-            )}`
-          ),
-      }
-
-    case "digi":
-      return {
-        host: host,
-        id:
-          instance.isbn ??
-          instance.bib ??
-          throwError(
-            `Instance ${
-              instance.id
-            } did not have an ISBN, and it didn't have a BIB, for book ${JSON.stringify(
-              book
-            )}`
-          ),
-      }
-
     case "bokrondellen":
     case "librisse":
-      if (!instance.isbn)
+      if (!image.isbn)
         throw new Error(
-          `Image host "${host}" requires ISBN, but instance doesn't have any! ${JSON.stringify(
+          `Image host "${host}" requires ISBN, but image doesn't have any! ${JSON.stringify(
             book
           )}`
         )
-      return { host: host, id: instance.isbn }
+      return { host: host, id: image.isbn }
 
+    case "digi":
+    case "author":
+    // This is just a photo of the author, nothing we want
     case "nielsen":
-      // Not sure about this, using isbn returns a different title when tested
-      return null
-
+    // Not sure about this, using isbn returns a different title when tested
     case "sesam":
-      // Example id, no way to find it in the existing data
-      // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/sesam/isbn/9189144325/I_364572_20061019105257.jpg/orginal
-      return null
-
+    // Example id, no way to find it in the existing data
+    // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/sesam/isbn/9189144325/I_364572_20061019105257.jpg/orginal
     case "libris":
       // Example id, no way to find it in the existing data
       // https://xinfo.libris.kb.se/xinfo/getxinfo?identifier=/PICTURE/libris/libris-bib/7650115/91-7588-130-6B.jpg/orginal
       return null
 
     default:
-      throw new Error(
-        `Unknown image host: ${instance.imageHost}. ${JSON.stringify(book)}`
-      )
+      throw new Error(`Unknown image host: ${host}. ${JSON.stringify(book)}`)
   }
 }
 
@@ -248,8 +213,8 @@ for (const file of files) {
     if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
 
     // We prefer Libris book cover if it exists
-    for (const instance of book.instances) {
-      const data = getBookCover(instance, book)
+    for (const image of book.images) {
+      const data = getBookCover(image, book)
 
       if (data) {
         insertBookCoverImage.run(bookId, data.host, data.id)

@@ -6,17 +6,23 @@ PREFIX country: <https://id.kb.se/country/>
 PREFIX nat: <https://id.kb.se/nationality/>
 
 SELECT
-  ?instance ?work ?bib ?imageHost ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?genre
+  ?instance ?work ?bib ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?imageHost ?imageBib ?imageIsbn ?genre
 {
   ?instance a ?type ;
     :instanceOf ?work ;
     :hasTitle [ :mainTitle ?title ] ;
     :publication [ :year ?year ; :country country:sw ] .
   OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
-  # Fetch cover image if it exists
-  # We need the publisher, which is the image host, to know what URL are available for this work
-  OPTIONAL { ?instance :image [ a :ImageObject ; :publisher ?imageHost ] }
   OPTIONAL { ?instance :sameAs ?bib }
+
+  # The current instance of the work might not have the image
+  # So we check all instances of the same work and get try to get the image that way
+  OPTIONAL {
+    ?otherInstance :instanceOf ?work ; :image ?img .
+    OPTIONAL { ?otherInstance :sameAs ?imageBib }
+    OPTIONAL { ?otherInstance :identifiedBy [ a :ISBN ; :value ?imageIsbn ] }
+    OPTIONAL { ?img :publisher ?imageHost }
+  }
 
   FILTER(?type IN (:Instance, :Print))
   FILTER(?year = "|YEAR|")

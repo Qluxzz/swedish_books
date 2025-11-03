@@ -12,7 +12,7 @@ import {
   SparqlResponse,
   Type,
 } from "./utils/sparql.ts"
-import { Instance, Release } from "./utils/release.ts"
+import { Release } from "./utils/release.ts"
 import { existsSync, mkdirSync } from "node:fs"
 
 // CONFIGURATION
@@ -71,7 +71,13 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
           return acc
         }
 
-        const existing = valid.get(x.work.value)
+        const workId =
+          x.work.type === Type.URI
+            ? getIdentifier(x.work.value) ??
+              throwError(`${x.work.value} could not be converted to an id`)
+            : x.work.value
+
+        const existing = valid.get(workId)
         if (existing) {
           existing.genres.add(x.genre.value)
 
@@ -86,9 +92,24 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
             existing.instances.push({
               id: x.instance.value,
               bib: x.bib?.value,
-              imageHost: x.imageHost?.value,
               isbn: x.isbn?.value,
             })
+
+          if (
+            x.imageHost?.value &&
+            !existing.images.some(
+              (i) =>
+                i.host === x.imageHost?.value &&
+                i.bib === x.imageBib?.value &&
+                i.isbn === x.imageIsbn?.value
+            )
+          ) {
+            existing.images.push({
+              host: x.imageHost.value,
+              bib: x.imageBib?.value,
+              isbn: x.imageIsbn?.value,
+            })
+          }
         } else {
           const authorId =
             // Best case, we have an URI for the author and we use that as the id
@@ -103,12 +124,6 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
                   `${x.givenName.value}${x.familyName.value}${x.lifeSpan?.value}`
                 )
 
-          const workId =
-            x.work.type === Type.URI
-              ? getIdentifier(x.work.value) ??
-                throwError(`${x.work.value} could not be converted to an id`)
-              : x.work.value
-
           valid.set(workId, {
             workId,
             title: x.title.value,
@@ -120,10 +135,18 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
               {
                 id: x.instance.value,
                 bib: x.bib?.value,
-                imageHost: x.imageHost?.value,
                 isbn: x.isbn?.value,
               },
             ],
+            images: x.imageHost?.value
+              ? [
+                  {
+                    host: x.imageHost.value,
+                    bib: x.imageBib?.value,
+                    isbn: x.imageIsbn?.value,
+                  },
+                ]
+              : [],
           })
         }
 
@@ -177,7 +200,7 @@ createFolderIfNotExists(`${cachePath}/json-sparql`)
 createFolderIfNotExists(`${cachePath}/json`)
 createFolderIfNotExists(`${cachePath}/goodreads`)
 
-const sparqlQueue = new PQueue({ concurrency: 10 })
+const sparqlQueue = new PQueue({ concurrency: 15 })
 const goodReadsQueue = new PQueue({ concurrency: 20 })
 
 sparqlQueue.addAll(

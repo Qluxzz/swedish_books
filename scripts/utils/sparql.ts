@@ -48,7 +48,6 @@ export interface Results {
     instance: Value
     work: Value
     bib?: Value
-    imageHost?: Value
     title: Value
     author: Value
     givenName: Value
@@ -56,6 +55,9 @@ export interface Results {
     lifeSpan?: Value
     isni?: Value
     isbn?: Value
+    imageHost?: Value
+    imageBib?: Value
+    imageIsbn?: Value
     genre: Value
   }[]
 }
