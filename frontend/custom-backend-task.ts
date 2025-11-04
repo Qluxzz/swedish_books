@@ -23,8 +23,8 @@ ranked_books AS (
     g.book_url,
     bc.host AS image_host,
     bc.image_id AS image_id,
-    (g.ratings * g.avg_rating * power((2025.0-b.year)/(2025.0-1850.0), 0.7)) AS rating,
-    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY (g.ratings * g.avg_rating * power((2025.0-b.year)/(2025.0-1850.0), 0.7)) DESC) AS rn
+    (g.ratings * g.avg_rating) AS rating,
+    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY (g.ratings * g.avg_rating) DESC) AS rn
   FROM books b
   INNER JOIN goodreads g ON g.book_id = b.id
   INNER JOIN authors a ON a.id = b.author_id
