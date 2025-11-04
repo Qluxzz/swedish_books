@@ -155,7 +155,7 @@ const ratedTitlesQuery = ({
   where?: string
   limit?: boolean
 } = {}) => `
-SELECT DISTINCT
+SELECT
   b.id,
   b.title,
   a.id author_id,
