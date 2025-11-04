@@ -35,12 +35,15 @@ const UNWANTED_GENRES = new Set([
   "https://id.kb.se/term/saogf/Allegorier",
   "https://id.kb.se/term/saogf/Bildverk",
   "https://id.kb.se/term/saogf/Biografier",
+  "https://id.kb.se/term/saogf/Filmmanus",
   "https://id.kb.se/term/saogf/L%C3%A4romedel",
+  "https://id.kb.se/term/saogf/L%C3%A4ttl%C3%A4st",
   "https://id.kb.se/term/saogf/Ljudb%C3%B6cker",
   "https://id.kb.se/term/saogf/Ljudbearbetningar",
   "https://id.kb.se/term/saogf/Ordspr%C3%A5k%20och%20tales%C3%A4tt",
   "https://id.kb.se/term/saogf/Poesi",
   "https://id.kb.se/term/saogf/Sj%C3%A4lvbiografier",
+  "https://id.kb.se/term/saogf/Studiehandledningar",
   "https://id.kb.se/term/saogf/Tecknade%20serier",
 ])
 
@@ -97,17 +100,20 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
 
           if (
             x.imageHost?.value &&
+            x.imageYear?.value &&
             !existing.images.some(
               (i) =>
                 i.host === x.imageHost?.value &&
                 i.bib === x.imageBib?.value &&
-                i.isbn === x.imageIsbn?.value
+                i.isbn === x.imageIsbn?.value &&
+                i.year === x.imageYear?.value
             )
           ) {
             existing.images.push({
               host: x.imageHost.value,
               bib: x.imageBib?.value,
               isbn: x.imageIsbn?.value,
+              year: x.imageYear?.value,
             })
           }
         } else {
@@ -138,15 +144,17 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
                 isbn: x.isbn?.value,
               },
             ],
-            images: x.imageHost?.value
-              ? [
-                  {
-                    host: x.imageHost.value,
-                    bib: x.imageBib?.value,
-                    isbn: x.imageIsbn?.value,
-                  },
-                ]
-              : [],
+            images:
+              x.imageHost?.value && x.imageYear?.value
+                ? [
+                    {
+                      year: x.imageYear.value,
+                      host: x.imageHost.value,
+                      bib: x.imageBib?.value,
+                      isbn: x.imageIsbn?.value,
+                    },
+                  ]
+                : [],
           })
         }
 
@@ -252,17 +260,19 @@ const fileQueue = new PQueue({ concurrency: 20 })
 fileQueue.addAll(
   parsedTitlesPerYear.map(({ year, titles }) => async () => {
     let withGoodreadsData = 0
+    let withImages = 0
     const enhanced = titles.map((title) => {
       const gData = goodreads.get(title.workId)
       if (gData) {
         title.goodreads = gData
         withGoodreadsData++
       }
+      if (title.images.length !== 0) withImages++
       return title
     })
 
     log(
-      `${year}: Found ${titles.length} titles, of which ${withGoodreadsData} was found on Goodreads!`
+      `${year}: Found ${titles.length} titles, ${withImages} had images, ${withGoodreadsData} was found on Goodreads!`
     )
 
     if (enhanced.length !== 0)

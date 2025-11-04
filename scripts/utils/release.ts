@@ -19,9 +19,10 @@ interface Release {
 }
 
 interface Image {
+  year: string
+  host: string
   bib?: string
   isbn?: string
-  host: string
 }
 
 interface Instance {

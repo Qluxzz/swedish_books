@@ -212,12 +212,16 @@ for (const file of files) {
     }
     if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
 
-    // We prefer Libris book cover if it exists
-    for (const image of book.images) {
+    // We want to get the cover of the oldest release
+    const oldestToNewest = book.images.toSorted((a, b) =>
+      a.year.localeCompare(b.year)
+    )
+    for (const image of oldestToNewest) {
       const data = getBookCover(image, book)
 
       if (data) {
         insertBookCoverImage.run(bookId, data.host, data.id)
+        // We only want one image per book
         break
       }
     }
