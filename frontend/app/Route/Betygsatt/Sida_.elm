@@ -88,7 +88,7 @@ view app shared =
                 [ Html.Attributes.class "book-grid" ]
                 (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.titles.data)
             ]
-        , PageSelector.view currentPage app.data.pages Route.EjBetygsatt__Sida_
+        , PageSelector.view currentPage app.data.pages Route.Betygsatt__Sida_
         ]
     }
 

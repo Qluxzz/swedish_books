@@ -5,6 +5,8 @@ import Html.Attributes
 import Route
 
 
+{-| Shows a page selector with links for [first page, three lower than current, current, three higher than current, last]
+-}
 view : Int -> Int -> ({ sida : String } -> Route.Route) -> Html.Html msg
 view currentPage amountOfPages baseUrl =
     Html.div [ Html.Attributes.class "page-selector" ]
