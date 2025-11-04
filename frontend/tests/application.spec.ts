@@ -38,18 +38,21 @@ test.describe("application", () => {
   })
 
   test("Book has expected details", async ({ page }) => {
-    const title = "Dikter"
-    const authorAndLifeSpan = "Gunnar Ekelöf (1907-1968)"
+    const title = "Ingenjör Andrées luftfärd"
+    const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
     const bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
 
     await expect(
-      bookCard.getByRole("heading", { level: 3, name: "Dikter" })
+      bookCard.getByRole("heading", {
+        level: 3,
+        name: "Ingenjör Andrées luftfärd",
+      })
     ).toBeVisible()
     await expect(
-      bookCard.getByRole("link", { name: "Gunnar Ekelöf (1907-1968)" })
+      bookCard.getByRole("link", { name: "Per Olof Sundman (1922-1992)" })
     ).toBeVisible()
-    await expect(bookCard.getByRole("link", { name: "1949" })).toBeVisible()
+    await expect(bookCard.getByRole("link", { name: "1967" })).toBeVisible()
   })
 
   const expectedLinks = [
@@ -81,8 +84,8 @@ test.describe("application", () => {
   })
 
   test("Clicking author name goes to page about author", async ({ page }) => {
-    const title = "Dikter"
-    const authorAndLifeSpan = "Gunnar Ekelöf (1907-1968)"
+    const title = "Ingenjör Andrées luftfärd"
+    const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
 
     const bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
@@ -92,7 +95,7 @@ test.describe("application", () => {
     })
     await authorLink.click()
 
-    expect(page.url()).toMatch(/\/forfattare\/\d+\/gunnar-ekeloef/)
+    expect(page.url()).toMatch(/\/forfattare\/\d+\/per-olof-sundman/)
     await expect(
       page.getByRole("heading", { level: 1, name: authorAndLifeSpan })
     ).toBeVisible()
@@ -112,9 +115,9 @@ test.describe("application", () => {
   test("Clicking publication year goes to page with titles for that year", async ({
     page,
   }) => {
-    const title = "Dikter"
-    const authorAndLifeSpan = "Gunnar Ekelöf (1907-1968)"
-    const year = "1949"
+    const title = "Ingenjör Andrées luftfärd"
+    const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
+    const year = "1967"
 
     let bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
@@ -135,10 +138,13 @@ test.describe("application", () => {
     await expect(bookCard).toBeVisible()
 
     await expect(
-      bookCard.getByRole("heading", { level: 3, name: "Dikter" })
+      bookCard.getByRole("heading", {
+        level: 3,
+        name: "Ingenjör Andrées luftfärd",
+      })
     ).toBeVisible()
     await expect(
-      bookCard.getByRole("link", { name: "Gunnar Ekelöf (1907-1968)" })
+      bookCard.getByRole("link", { name: "Per Olof Sundman (1922-1992)" })
     ).toBeVisible()
     // The year is not clickable when we're on a year page
     await expect(bookCard.getByRole("link", { name: year })).not.toBeVisible()
