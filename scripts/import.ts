@@ -202,7 +202,7 @@ for (const file of files) {
       book.authorId,
       book.author,
       book.lifeSpan ?? null,
-      slugify.default(book.author, { lower: true, locale: "sv" })
+      slugify.default(book.author, { lower: true, locale: "sv", strict: true })
     )
     const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
     if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
