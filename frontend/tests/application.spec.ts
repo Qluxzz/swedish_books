@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, Page } from "@playwright/test"
 
 test.describe("application", () => {
   test.beforeEach(async ({ page }) => {
@@ -29,7 +29,9 @@ test.describe("application", () => {
   })
 
   test("Book has expected details", async ({ page }) => {
-    const bookCard = page.locator(".book-card").first()
+    const title = "Dikter"
+    const authorAndLifeSpan = "Gunnar Ekelöf (1907-1968)"
+    const bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
 
     await expect(
@@ -70,8 +72,10 @@ test.describe("application", () => {
   })
 
   test("Clicking author name goes to page about author", async ({ page }) => {
+    const title = "Dikter"
     const authorAndLifeSpan = "Gunnar Ekelöf (1907-1968)"
-    const bookCard = page.locator(".book-card").first()
+
+    const bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
 
     const authorLink = bookCard.getByRole("link", {
@@ -99,9 +103,11 @@ test.describe("application", () => {
   test("Clicking publication year goes to page with titles for that year", async ({
     page,
   }) => {
+    const title = "Dikter"
+    const authorAndLifeSpan = "Gunnar Ekelöf (1907-1968)"
     const year = "1949"
 
-    let bookCard = page.locator(".book-card").first()
+    let bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
 
     const yearLink = bookCard.getByRole("link", {
@@ -116,7 +122,7 @@ test.describe("application", () => {
     ).toBeVisible()
 
     // This is the same book on the year page
-    bookCard = page.locator(".book-card").first()
+    bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
 
     await expect(
@@ -136,4 +142,28 @@ test.describe("application", () => {
       await expect(book.getByText(year)).toBeVisible()
     }
   })
+
+  test("There's a list of year links at the bottom of the home page", async ({
+    page,
+  }) => {
+    const yearSection = page.locator(".section:last-child", {
+      has: page.getByText("Hitta titlar per år"),
+    })
+    await expect(yearSection).toBeVisible()
+    const yearsToFind = [1995, 2012, 1972]
+
+    for (const year of yearsToFind) {
+      await expect(
+        yearSection.getByRole("link", { name: year.toString() })
+      ).toBeVisible()
+    }
+  })
+
+  // HELPERS
+
+  function findBook(title: string, authorAndLifeSpan: string, page: Page) {
+    return page.locator(".book-card", {
+      hasText: `${title}${authorAndLifeSpan}`,
+    })
+  }
 })
