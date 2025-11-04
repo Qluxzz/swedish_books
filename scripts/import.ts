@@ -247,11 +247,9 @@ for (const file of files) {
 db.prepare("COMMIT").run()
 console.timeEnd("Import time")
 
-// Remove books by the most popular authors and highest ranked books
-// The more instances of books an author has, we count as more popular.
-// For ranked books (has data from Goodreads) we ignore the 10% most popular books
-
-const result = db
+// Remove the authors with the highest amount of ratings on Goodreads
+// If the author doesn't even exist on Goodread, we count that as being lesser known
+const deleted = db
   .prepare(
     `
 WITH ranked AS (
@@ -268,34 +266,14 @@ WITH ranked AS (
     WHERE ratings > 0
     GROUP BY author_id
   ) WHERE pct >= 0.9
-),
-popularity AS (
-  SELECT 
-    author_id,
-    pct
-  FROM (
-    SELECT
-      author_id,
-      PERCENT_RANK() OVER (ORDER BY SUM(instances) ASC) AS pct
-    FROM books GROUP BY author_id
-  ) WHERE pct >= 0.955
 )
-DELETE FROM books
-WHERE id IN (
-  SELECT id FROM books b
-  LEFT JOIN ranked r 
-    ON b.author_id = r.author_id
-  LEFT JOIN popularity p 
-    ON p.author_id = b.author_id 
-  WHERE 
-    r.author_id IS NOT NULL 
-    OR p.author_id IS NOT NULL
-)
+DELETE FROM authors
+WHERE id IN (SELECT author_id FROM ranked)
   `
   )
   .run()
 
-console.log(`Removed ${result.changes} books`)
+console.log(`Removed ${deleted.changes} authors`)
 
 console.time("vaccum")
 db.exec("VACUUM;")
