@@ -289,7 +289,13 @@ footer {
   justify-content: center;
   align-items: center;
   font-variant-numeric: tabular-nums;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  text-align: center;
+
+  a,
+  span {
+    width: 3ch;
+  }
 
   span {
     font-size: 2rem;
