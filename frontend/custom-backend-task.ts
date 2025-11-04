@@ -199,6 +199,9 @@ SELECT
   a.slug author_slug,
   b.year,
   b.instances,
+  g.avg_rating,
+  g.ratings,
+  g.book_url,
   bc.host image_host,
   bc.image_id
 FROM books b
