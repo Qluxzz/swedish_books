@@ -1,23 +1,24 @@
+name: Build and publish site
 on:
   push:
-    branches:
-      - "main"
+    branches: [ main ]
 
 jobs:
   build:
     name: Build static site
     runs-on: ubuntu-22.04
-
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
           node-version: 22
+      - name: Install dependencies
+        run: npm ci
       - name: Build page
-        run: |
-          cd frontend
-          npm install
-          npm run build > /dev/null
+        run: npm run build
 
       - name: Upload production artifacts
         uses: actions/upload-pages-artifact@v3
