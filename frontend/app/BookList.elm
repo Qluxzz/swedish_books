@@ -17,7 +17,7 @@ view viewOptions ratedBooks unratedBooks =
       else
         section
             "Betygsatta böcker"
-            "Klicka för att see information om boken på Goodreads"
+            "Dessa böcker hittades på Goodreads så de är åtminstone lite kända"
             (List.map bView ratedBooks)
     , if List.isEmpty unratedBooks then
         Html.text ""
@@ -25,7 +25,7 @@ view viewOptions ratedBooks unratedBooks =
       else
         section
             "Mysterierna"
-            "Dessa böcker är inte ens betygsatta, klicka på en för att läsa mer om den på Libris hemsida"
+            "Dessa böcker är inte ens betygsatta, är de oslipade diamanter eller finns det en anledning till att de är okänd"
             (List.map bView unratedBooks)
     ]
 
