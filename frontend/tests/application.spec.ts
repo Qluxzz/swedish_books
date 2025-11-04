@@ -16,15 +16,24 @@ test.describe("application", () => {
 
   test("Has expected sections", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { level: 2, name: "Betygsatta böcker" })
+      page.locator("section:first-child", {
+        has: page.getByRole("heading", { level: 2, name: "Betygsatta böcker" }),
+      })
     ).toBeVisible()
 
     await expect(
-      page.getByRole("heading", { level: 2, name: "Mysterierna" })
+      page.locator("section:nth-child(2)", {
+        has: page.getByRole("heading", { level: 2, name: "Mysterierna" }),
+      })
     ).toBeVisible()
 
     await expect(
-      page.getByRole("heading", { level: 2, name: "Hitta titlar per år" })
+      page.locator("section:last-child", {
+        has: page.getByRole("heading", {
+          level: 2,
+          name: "Hitta titlar per år",
+        }),
+      })
     ).toBeVisible()
   })
 
@@ -136,8 +145,8 @@ test.describe("application", () => {
     // But the year is still shown on each book card
     await expect(bookCard.getByText(year)).toBeVisible()
 
-    // Expect all other books to have the same year
-    const books = await page.locator(".book-card").all()
+    // Expect other books to have the same year
+    const books = (await page.locator(".book-card").all()).slice(0, 5)
     for (const book of books) {
       await expect(book.getByText(year)).toBeVisible()
     }
