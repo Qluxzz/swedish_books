@@ -11,7 +11,7 @@ view : Int -> Int -> ({ sida : String } -> Route.Route) -> Html.Html msg
 view currentPage amountOfPages baseUrl =
     Html.div [ Html.Attributes.class "page-selector" ]
         (1
-            :: List.range (Basics.max 2 (currentPage - 3)) (Basics.min (amountOfPages - 1) (currentPage + 3))
+            :: List.range (Basics.max 2 (currentPage - 2)) (Basics.min (amountOfPages - 1) (currentPage + 2))
             ++ [ amountOfPages ]
             |> List.map
                 (\page ->
