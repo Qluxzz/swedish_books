@@ -57,7 +57,7 @@ CREATE TABLE book_covers (
 db.exec(`
 CREATE TABLE goodreads (
   id INTEGER PRIMARY KEY,
-  book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+  book_id INTEGER REFERENCES books(id) ON DELETE CASCADE UNIQUE,
   pages INTEGER,
   avg_rating INTEGER NOT NULL,
   ratings INTEGER NOT NULL,
@@ -93,7 +93,7 @@ const insertBookGenre = db.prepare(
 )
 
 const insertGoodreadsData = db.prepare(
-  "INSERT INTO goodreads(book_id, pages, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?, ?)"
+  "INSERT OR IGNORE INTO goodreads(book_id, pages, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?, ?)"
 )
 
 const insertBookCoverImage = db.prepare(
@@ -232,7 +232,7 @@ for (const file of files) {
     }
 
     // Insert goodreads data if exists
-    if (book.goodreads && book.goodreads.ratingsCount > 0) {
+    if (book.goodreads) {
       insertGoodreadsData.run(
         bookId,
         book.goodreads.numPages,

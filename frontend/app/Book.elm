@@ -116,10 +116,14 @@ view { linkToAuthor, linkToYear } book =
                 [ yearView book.year linkToYear
                 , case book.goodreads of
                     Just r ->
-                        Html.div [ Html.Attributes.class "book-rating" ]
-                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.alt "rating icon", Html.Attributes.src "/star.svg" ] []
-                            , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
-                            ]
+                        if r.ratings > 0 then
+                            Html.div [ Html.Attributes.class "book-rating" ]
+                                [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.alt "rating icon", Html.Attributes.src "/star.svg" ] []
+                                , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
+                                ]
+
+                        else
+                            Html.text ""
 
                     Nothing ->
                         Html.text ""
