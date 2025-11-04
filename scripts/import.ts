@@ -37,10 +37,11 @@ db.exec(`
 CREATE TABLE books (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
+  slug TEXT NOT NULL,
   author_id INTEGER NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
   instances INTEGER NOT NULL DEFAULT 1,
-  UNIQUE (title, author_id)
+  UNIQUE (slug, author_id)
 );
 `)
 
@@ -78,9 +79,9 @@ const insertAuthor = db.prepare(
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
 const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year)
-  VALUES (?, ?, ?)
-  ON CONFLICT(title, author_id)
+  INSERT INTO books(title, author_id, year, slug)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(author_id, slug)
   DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
   RETURNING id
 `)
@@ -204,13 +205,17 @@ for (const file of files) {
       book.lifeSpan ?? null,
       slugify.default(book.author, { lower: true, locale: "sv", strict: true })
     )
-    const { id: authorId } = getAuthorId.get(book.authorId) ?? { id: null }
-    if (!authorId) throw new Error(`Missing authorId for ${book.author}`)
+    const authorId =
+      getAuthorId.get(book.authorId)?.id ??
+      throwError(`Failed to get author id for ${book.author}`)
 
-    const { id: bookId } = insertBook.get(book.title, authorId, year) ?? {
-      id: null,
-    }
-    if (!bookId) throw new Error(`Missing bookId for ${book.title}`)
+    const bookId =
+      insertBook.get(
+        book.title,
+        authorId,
+        year,
+        slugify.default(book.title, { lower: true, locale: "sv", strict: true })
+      )?.id ?? throwError(`Failed to get book id for ${book.title}`)
 
     // We want to get the cover of the oldest release
     const oldestToNewest = book.images.toSorted((a, b) =>
