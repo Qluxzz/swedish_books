@@ -194,6 +194,24 @@ test.describe("application", () => {
     expect(books).toMatchObject(books2)
   })
 
+  test("Pagination on rated titles works", async ({ page }) => {
+    await page.goto("/betygsatt/1")
+    await page
+      .locator(".page-selector")
+      .getByRole("link", { name: "2", exact: true })
+      .click()
+    expect(page.url()).toContain("/betygsatt/2")
+  })
+
+  test("Pagination on unrated titles works", async ({ page }) => {
+    await page.goto("/ej-betygsatt/1")
+    await page
+      .locator(".page-selector")
+      .getByRole("link", { name: "2", exact: true })
+      .click()
+    expect(page.url()).toContain("/ej-betygsatt/2")
+  })
+
   // HELPERS
 
   function findBook(title: string, authorAndLifeSpan: string, page: Page) {
