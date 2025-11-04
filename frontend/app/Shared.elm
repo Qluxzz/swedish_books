@@ -83,7 +83,16 @@ data =
 
 linkToHomePage : Html msg
 linkToHomePage =
-    Html.a [ Html.Attributes.class "back", Html.Attributes.href (Route.toString Route.Index) ] [ Html.img [ Html.Attributes.src "/back.svg" ] [] ]
+    Html.a
+        [ Html.Attributes.class "back"
+        , Html.Attributes.href (Route.toString Route.Index)
+        ]
+        [ Html.img
+            [ Html.Attributes.alt "Back to home"
+            , Html.Attributes.src "/back.svg"
+            ]
+            []
+        ]
 
 
 {-| Adds noreferrer and nofollow and opens the link in a new tab

@@ -98,7 +98,7 @@ view { linkToAuthor, linkToYear } book =
             Html.div [ Html.Attributes.class "book-cover" ]
                 (case book.imageUrl of
                     Just u ->
-                        [ Html.img [ Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ book.title ] [] ]
+                        [ Html.img [ Html.Attributes.attribute "loading" "lazy", Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ book.title ] [] ]
 
                     Nothing ->
                         [ Html.text "Inget omslag hittades" ]
@@ -117,7 +117,7 @@ view { linkToAuthor, linkToYear } book =
                 , case book.goodreads of
                     Just r ->
                         Html.div [ Html.Attributes.class "book-rating" ]
-                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.src "/star.svg" ] []
+                            [ Html.img [ Html.Attributes.class "rating-star", Html.Attributes.alt "rating icon", Html.Attributes.src "/star.svg" ] []
                             , Html.span [ Html.Attributes.class "rating-value" ] [ Html.text <| String.fromFloat r.avgRating ++ " (" ++ String.fromInt r.ratings ++ ")" ]
                             ]
 
