@@ -7,7 +7,6 @@ const database = new DatabaseSync("../books.db", {
 const PAGE_SIZE = 24
 
 // This is the first page for both rated and unrated titles
-// But we still say when browsing the respective categories that we're starting from page one again
 export async function getHomePageData(pageSize: number | null = PAGE_SIZE) {
   pageSize ??= PAGE_SIZE
 
@@ -27,11 +26,11 @@ ORDER BY
     .all()
 
   const ratedTitles = database
-    .prepare(`${ratedTitlesQuery} LIMIT @skip, @take`)
+    .prepare(ratedTitlesQuery({ limit: true }))
     .all({ skip: 0, take: PAGE_SIZE })
 
   const unratedTitles = database
-    .prepare(`${unratedTitlesQuery} LIMIT @skip, @take`)
+    .prepare(unratedTitlesQuery({ limit: true }))
     .all({ skip: 0, take: PAGE_SIZE })
 
   return {
@@ -41,172 +40,55 @@ ORDER BY
   }
 }
 
-const ratedTitlesQuery = `WITH
-ranked_books AS (
-  SELECT
-    b.id,
-    b.title,
-    a.id AS author_id,
-    a.name AS author_name,
-    a.life_span AS author_life_span,
-    a.slug AS author_slug,
-    b.year,
-    g.avg_rating,
-    g.ratings,
-    g.book_url,
-    bc.host AS image_host,
-    bc.image_id AS image_id,
-    (g.ratings * g.avg_rating) AS rating,
-    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY (g.ratings * g.avg_rating) DESC) AS rn
-  FROM books b
-  INNER JOIN goodreads g ON g.book_id = b.id
-  INNER JOIN authors a ON a.id = b.author_id
-  LEFT JOIN book_covers bc ON bc.book_id = b.id
-)
-SELECT
-  id,
-  title,
-  author_id,
-  author_name,
-  author_life_span,
-  author_slug,
-  year,
-  avg_rating,
-  ratings,
-  book_url,
-  image_host,
-  image_id,
-  rating
-FROM ranked_books
-WHERE rn = 1  -- keep only top book per author
-ORDER BY image_host IS NULL, rating DESC`
-
 export async function getRatedTitles(page: number) {
   const pageSize = PAGE_SIZE
 
   return createPaginationResult(
-    database.prepare(`${ratedTitlesQuery} LIMIT @skip, @take`),
-    page,
+    database.prepare(ratedTitlesQuery({ limit: true })),
+    page + 1, // The home page is the real first page
     pageSize
   )
 }
 
 export async function getRatedTitlesPageCount() {
-  const count =
-    database.prepare(`SELECT COUNT(*) count FROM (${ratedTitlesQuery})`).get()
-      ?.count ?? throwError("Failed to get count of rated titles")
+  const result = database
+    .prepare(`SELECT COUNT(*) count FROM (${ratedTitlesQuery()})`)
+    .get()
 
-  return Math.ceil(count / PAGE_SIZE) - 1
+  if (typeof result?.count !== "number")
+    throw new Error("Count was not a number!")
+
+  return Math.ceil(result.count / PAGE_SIZE) - 2 // The first page is the home page
 }
 
 export async function getUnratedTitlesPageCount() {
   const result = database
-    .prepare(`SELECT COUNT(*) count FROM (${unratedTitlesQuery})`)
+    .prepare(`SELECT COUNT(*) count FROM (${unratedTitlesQuery()})`)
     .get()
 
-  return Math.ceil(result.count / PAGE_SIZE) - 1
+  if (typeof result?.count !== "number")
+    throw new Error("Count was not a number!")
+
+  return Math.ceil(result.count / PAGE_SIZE) - 2 // The first page is the home page
 }
 
 export async function getUnratedTitles(page: number) {
   const pageSize = PAGE_SIZE
 
   return createPaginationResult(
-    database.prepare(`${unratedTitlesQuery} LIMIT @skip, @take`),
-    page,
+    database.prepare(unratedTitlesQuery({ limit: true })),
+    page + 1, // The home page is the real first page
     pageSize
   )
 }
 
-const unratedTitlesQuery = `WITH ranked_books AS (
-  SELECT
-    b.id,
-    b.title,
-    a.id AS author_id,
-    a.name AS author_name,
-    a.life_span AS author_life_span,
-    a.slug AS author_slug,
-    b.year,
-    b.instances,
-    bc.host AS image_host,
-    bc.image_id AS image_id,
-    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY RANDOM() DESC) AS rn
-  FROM books b
-  LEFT JOIN goodreads g ON g.book_id = b.id
-  INNER JOIN authors a ON a.id = b.author_id
-  LEFT JOIN book_covers bc ON bc.book_id = b.id
-  WHERE g.id is NULL
-)
-SELECT
-  id,
-  title,
-  author_id,
-  author_name,
-  author_life_span,
-  author_slug,
-  year,
-  instances,
-  image_host,
-  image_id
-FROM ranked_books
-WHERE rn = 1  -- keep only top book per author
-ORDER BY image_host IS NULL, instances DESC, RANDOM()
-`
-
 export function getTitlesForYear(year: string) {
   const ratedTitles = database
-    .prepare(
-      `
-SELECT DISTINCT
-  b.id,
-  b.title,
-  a.id author_id,
-  a.name author_name,
-  a.life_span author_life_span,
-  a.slug author_slug,
-  b.year,
-  g.avg_rating,
-  g.ratings,
-  g.book_url,
-  bc.host image_host,
-  bc.image_id image_id
-FROM books b
-INNER JOIN authors a
-  ON a.id = b.author_id
-INNER JOIN goodreads g
-  ON g.book_id = b.id
-LEFT JOIN book_covers bc
-  ON bc.book_id = b.id
-WHERE 
-  b.year = ?
-ORDER BY bc.id IS NOT NULL DESC, (g.ratings * g.avg_rating) DESC
-`
-    )
+    .prepare(ratedTitlesQuery({ where: "b.year = ?" }))
     .all(year)
 
   const unratedTitles = database
-    .prepare(
-      `
-SELECT DISTINCT
-  b.id,
-  b.title,
-  a.id author_id,
-  a.name author_name,
-  a.life_span author_life_span,
-  a.slug author_slug,
-  b.year,
-  bc.host image_host,
-  bc.image_id image_id
-FROM books b
-INNER JOIN authors a
-  ON a.id = b.author_id
-LEFT JOIN goodreads g
-  ON g.book_id = b.id
-LEFT JOIN book_covers bc
-  ON bc.book_id = b.id
-WHERE g.id IS NULL AND b.year = ?
-ORDER BY bc.id IS NOT NULL DESC, RANDOM()
-    `
-    )
+    .prepare(unratedTitlesQuery({ where: "b.year = ?" }))
     .all(year)
 
   return { ratedTitles, unratedTitles }
@@ -217,33 +99,6 @@ const authors = database.prepare("SELECT * FROM authors").all()
 export function getAuthors() {
   return authors
 }
-
-const getAllTitlesForAuthor = database.prepare(
-  `
-SELECT DISTINCT
-  b.id,
-  b.title,
-  a.id author_id,
-  a.name author_name,
-  a.life_span author_life_span,
-  a.slug author_slug,
-  b.year,
-  g.avg_rating,
-  g.ratings,
-  g.book_url,
-  bc.host image_host,
-  bc.image_id image_id
-FROM books b 
-INNER JOIN authors a 
-  ON b.author_id = a.id 
-LEFT JOIN goodreads g
-  ON g.book_id = b.id
-LEFT JOIN book_covers bc
-  ON bc.book_id = b.id
-WHERE author_id = ? 
-ORDER BY b.year ASC
-`
-)
 
 const getAuthorInfo = database.prepare(
   "SELECT name, life_span FROM authors WHERE id = ?"
@@ -286,3 +141,98 @@ function createPaginationResult(
     hasMore: data.length > pageSize,
   }
 }
+
+// QUERIES
+
+// Sorted by titles with covers first
+// Then sorted by rating
+// and then randomly using a fixed seed,
+// so it stays consistent between executions
+const ratedTitlesQuery = ({
+  where,
+  limit,
+}: {
+  where?: string
+  limit?: boolean
+} = {}) => `
+SELECT DISTINCT
+  b.id,
+  b.title,
+  a.id author_id,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
+  b.year,
+  g.avg_rating,
+  g.ratings,
+  g.book_url,
+  bc.host image_host,
+  bc.image_id
+FROM books b
+  INNER JOIN goodreads g ON g.book_id = b.id
+  INNER JOIN authors a ON a.id = b.author_id
+  LEFT JOIN book_covers bc ON bc.book_id = b.id
+WHERE g.ratings > 0 ${where ? `AND ${where}` : ""}
+ORDER BY 
+  image_host IS NULL, 
+  (g.avg_rating * g.ratings) DESC, 
+  ((b.id * 1103515245 + 12345 + 1337) & 0x7fffffff)
+${limit ? `LIMIT @skip, @take` : ""}
+`
+
+// Sorted by the titles with covers first,
+// and then randomly using a fixed seed,
+// so it stays consistent between executions
+const unratedTitlesQuery = ({
+  where,
+  limit,
+}: {
+  where?: string
+  limit?: boolean
+} = {}) => `
+SELECT
+  b.id,
+  b.title,
+  a.id author_id,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
+  b.year,
+  b.instances,
+  bc.host image_host,
+  bc.image_id
+FROM books b
+  LEFT JOIN goodreads g ON g.book_id = b.id
+  INNER JOIN authors a ON a.id = b.author_id
+  LEFT JOIN book_covers bc ON bc.book_id = b.id
+  WHERE (g.id is NULL OR g.ratings = 0) ${where ? `AND ${where}` : ""}
+ORDER BY bc.host IS NULL, ((b.id * 1103515245 + 12345 + 1337) & 0x7fffffff)
+${limit ? `LIMIT @skip, @take` : ""}
+`
+
+const getAllTitlesForAuthor = database.prepare(
+  `
+SELECT DISTINCT
+  b.id,
+  b.title,
+  a.id author_id,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
+  b.year,
+  g.avg_rating,
+  g.ratings,
+  g.book_url,
+  bc.host image_host,
+  bc.image_id image_id
+FROM books b 
+INNER JOIN authors a 
+  ON b.author_id = a.id 
+LEFT JOIN goodreads g
+  ON g.book_id = b.id
+LEFT JOIN book_covers bc
+  ON bc.book_id = b.id
+WHERE author_id = ? 
+ORDER BY b.year ASC
+`
+)
