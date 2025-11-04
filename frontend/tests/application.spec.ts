@@ -168,6 +168,32 @@ test.describe("application", () => {
     }
   })
 
+  test("Sorting is stable on a rated books page", async ({ page }) => {
+    await page.goto("/betygsatt/1")
+    const books = await Promise.all(
+      (await page.locator(".book-card").all()).map((x) => x.textContent())
+    )
+    await page.reload()
+    const books2 = await Promise.all(
+      (await page.locator(".book-card").all()).map((x) => x.textContent())
+    )
+
+    expect(books).toMatchObject(books2)
+  })
+
+  test("Sorting is stable on a unrated books page", async ({ page }) => {
+    await page.goto("/ej-betygsatt/1")
+    const books = await Promise.all(
+      (await page.locator(".book-card").all()).map((x) => x.textContent())
+    )
+    await page.reload()
+    const books2 = await Promise.all(
+      (await page.locator(".book-card").all()).map((x) => x.textContent())
+    )
+
+    expect(books).toMatchObject(books2)
+  })
+
   // HELPERS
 
   function findBook(title: string, authorAndLifeSpan: string, page: Page) {
