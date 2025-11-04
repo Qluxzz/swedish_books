@@ -174,6 +174,17 @@ test.describe("application", () => {
     }
   })
 
+  test("No book on home page is duplicated", async ({ page }) => {
+    const books = await Promise.all(
+      (await page.locator(".book-card").all()).map((x) => x.textContent())
+    )
+    expect(books).not.toContain(null)
+
+    const uniqueBooks = new Set(books)
+
+    expect(uniqueBooks.size).toBe(books.length)
+  })
+
   test.describe("Rated books", () => {
     test("Navigating to rated tiles works", async ({ page }) => {
       await page
