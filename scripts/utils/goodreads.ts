@@ -83,7 +83,10 @@ async function getDataFromGoodReads(book: Release): Promise<Goodreads | null> {
       if (result) return result
     }
 
-    return await getByTitleAndAuthor(book.title, book.author)
+    return await getByTitleAndAuthor(
+      book.title,
+      `${book.author.givenName} ${book.author.familyName}`
+    )
   } catch (error) {
     log(
       `Something went wrong when getting info for book ${book.title} ${book.author}. Error was: ${error}`

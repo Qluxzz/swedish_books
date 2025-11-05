@@ -312,3 +312,8 @@ a.back {
     width: 25px;
   }
 }
+
+.authors {
+  display: flex;
+  flex-direction: column;
+}

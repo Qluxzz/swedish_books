@@ -1,4 +1,4 @@
-module Book exposing (Book, ViewOptions, decode, lifeSpanView, view)
+module Book exposing (Author, Book, ViewOptions, decode, lifeSpanView, view)
 
 import Dict
 import Head.Seo exposing (book)

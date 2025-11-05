@@ -122,6 +122,42 @@ export function getAvailableYears() {
     .get()
 }
 
+export function getCountOfAuthorsByStartingFamilyNameLetter() {
+  return getAuthorsCountByLetter.all()
+}
+
+interface IAuthorWithBooks {
+  id: string
+  name: string
+  slug: string
+  lifeSpan?: string
+  books: any[]
+}
+
+export function getAuthorsByLetter(letter: string) {
+  const data = getAuthorsByLetterQuery.all(letter)
+
+  return data
+    .reduce((acc, book) => {
+      const existing = acc.get(book.author_id)
+      if (existing) {
+        existing.books.push(book)
+      } else {
+        acc.set(book.author_id, {
+          id: book.author_id,
+          name: book.author_name,
+          slug: book.author_slug,
+          lifeSpan: book.author_life_span,
+          books: [book],
+        })
+      }
+
+      return acc
+    }, new Map<string, IAuthorWithBooks>())
+    .values()
+    .toArray()
+}
+
 function throwError(message: string): never {
   throw Error(message)
 }
@@ -237,5 +273,51 @@ LEFT JOIN book_covers bc
   ON bc.book_id = b.id
 WHERE author_id = ? 
 ORDER BY b.year ASC
+`
+)
+
+const getAuthorsCountByLetter = database.prepare(
+  `SELECT upper(substring(family_name, 1, 1)) char, COUNT(*) count FROM authors GROUP BY upper(substring(family_name, 1, 1))`
+)
+
+const getAuthorsByLetterQuery = database.prepare(
+  `WITH ranked_books AS (
+  SELECT 
+    b.id book_id,
+    b.author_id,
+    ROW_NUMBER() OVER (PARTITION BY b.author_id ORDER BY b.instances DESC) AS book_rank
+  FROM books b
+)
+SELECT DISTINCT
+  b.id,
+  b.title,
+  a.id author_id,
+  a.name author_name,
+  a.life_span author_life_span,
+  a.slug author_slug,
+  b.year,
+  g.avg_rating,
+  g.ratings,
+  g.book_url,
+  bc.host image_host,
+  bc.image_id image_id,
+  (SELECT COUNT(*) FROM books WHERE author_id = a.id) AS total_books
+FROM authors a
+INNER JOIN books b
+  ON b.author_id = a.id 
+LEFT JOIN goodreads g
+  ON g.book_id = b.id
+LEFT JOIN book_covers bc
+  ON bc.book_id = b.id
+INNER JOIN ranked_books rb 
+  ON rb.author_id = a.id
+  AND rb.book_id = b.id
+WHERE 
+  rb.book_rank <= 3
+  AND UPPER(SUBSTRING(a.family_name, 1, 1)) = ?
+ORDER BY 
+  a.family_name, 
+  a.given_name, 
+  b.instances DESC;
 `
 )
