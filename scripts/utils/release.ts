@@ -6,9 +6,12 @@ interface Release {
    */
   workId: string
   title: string
-  authorId: string
-  author: string
-  lifeSpan?: string
+  author: {
+    id: string
+    givenName: string
+    familyName: string
+    lifeSpan?: string
+  }
   genres: Set<string>
   /**
    * These are all found instances of a work, this is usually re-pressings and new editions

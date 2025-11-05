@@ -135,9 +135,12 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
           valid.set(workId, {
             workId,
             title: x.title.value,
-            authorId,
-            author: `${x.givenName.value} ${x.familyName.value}`,
-            lifeSpan: x.lifeSpan?.value,
+            author: {
+              id: authorId,
+              givenName: x.givenName.value,
+              familyName: x.familyName.value,
+              lifeSpan: x.lifeSpan?.value,
+            },
             genres: new Set<string>([x.genre.value]),
             instances: [
               {
@@ -174,7 +177,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
 
           if (!result) {
             console.error(
-              `Book instance ${instance.id} of ${book.title} by ${book.author} had an invalid ISBN (${instance.isbn}) `
+              `Book instance ${instance.id} of ${book.title} by ${book.author.givenName} ${book.author.familyName} had an invalid ISBN (${instance.isbn}) `
             )
 
             instance.isbn = undefined

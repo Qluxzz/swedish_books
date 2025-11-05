@@ -289,3 +289,8 @@ footer {
     text-decoration: none;
   }
 }
+
+.authors {
+  display: flex;
+  flex-direction: column;
+}

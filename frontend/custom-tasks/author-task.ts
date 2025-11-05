@@ -1,3 +1,4 @@
+import { sql } from "kysely"
 import { bookBaseQuery, db } from "./db.ts"
 import { stringToIntWithError } from "./utils.ts"
 
@@ -30,4 +31,26 @@ async function getTitlesForAuthor(authorId: string) {
   }
 }
 
-export { getAuthors, getTitlesForAuthor }
+async function getAuthorsCountByLetter() {
+  return await db
+    .selectFrom("authors")
+    .select([
+      sql`upper(substring(family_name, 1, 1))`.as("char"),
+      sql`count(*)`.as("count"),
+    ])
+    .groupBy(sql`upper(substring(family_name, 1, 1))`)
+    .execute()
+}
+
+async function getAuthorsByLetter(letter: string) {
+  return await bookBaseQuery
+    .where(sql`upper(substring(family_name, 1, 1))`, "=", letter)
+    .execute()
+}
+
+export {
+  getAuthors,
+  getTitlesForAuthor,
+  getAuthorsByLetter,
+  getAuthorsCountByLetter,
+}
