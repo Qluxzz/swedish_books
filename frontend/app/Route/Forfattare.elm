@@ -42,7 +42,7 @@ route =
 
 
 type alias Data =
-    { data : List ( Char, Int ) }
+    { data : List ( String, Int ) }
 
 
 type alias ActionData =
@@ -57,18 +57,8 @@ data =
             (Json.Decode.list
                 (Json.Decode.map2
                     Tuple.pair
-                    (Json.Decode.field "char" Json.Decode.string
-                        |> Json.Decode.andThen
-                            (\s ->
-                                case String.uncons s of
-                                    Just ( c, _ ) ->
-                                        Json.Decode.succeed c
-
-                                    Nothing ->
-                                        Json.Decode.fail "Expected a non-empty string for 'char'"
-                            )
-                    )
-                    (Json.Decode.field "count" Json.Decode.int)
+                    (Json.Decode.field "prefix" Json.Decode.string)
+                    (Json.Decode.field "amount" Json.Decode.int)
                 )
             )
         )
@@ -87,14 +77,12 @@ view :
 view app shared =
     { title = "Författare"
     , body =
-        [ Html.ul []
+        [ Html.div [ Html.Attributes.class "prefixes" ]
             (app.data.data
                 |> List.map
                     (\( bokstav, count ) ->
-                        Html.li []
-                            [ Html.a [ Html.Attributes.href (Route.toString (Route.Forfattare__Bokstav_ { bokstav = String.fromChar bokstav })) ]
-                                [ Html.text <| (bokstav |> String.fromChar) ++ " (" ++ String.fromInt count ++ ")"
-                                ]
+                        Html.a [ Html.Attributes.href (Route.toString (Route.Forfattare__Bokstav_ { bokstav = bokstav })) ]
+                            [ Html.text <| bokstav ++ " (" ++ String.fromInt count ++ ")"
                             ]
                     )
             )

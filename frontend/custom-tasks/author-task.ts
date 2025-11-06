@@ -42,10 +42,36 @@ async function getAuthorsCountByLetter() {
     .execute()
 }
 
+const rankedBooks = db
+  .selectFrom("books as b")
+  .leftJoin("goodreads as gr", "gr.book_id", "b.id")
+  .select([
+    "b.id as book_id",
+    "b.author_id",
+    sql<number>`
+      ROW_NUMBER() OVER (
+        PARTITION BY b.author_id
+        ORDER BY (MAX(1, gr.ratings * gr.avgRating) * b.instances) DESC
+      )
+    `.as("book_rank"),
+  ])
+  .as("rb")
+
 async function getAuthorsByLetter(letter: string) {
-  return await bookBaseQuery
-    .where("authors.family_name", "like", letter)
-    .execute()
+  const bb = bookBaseQuery.as("bb")
+
+  return db
+    .selectFrom(bb)
+    .innerJoin(rankedBooks, (join) =>
+      join
+        .onRef("rb.author_id", "=", "bb.author_id")
+        .onRef("rb.book_id", "=", "bb.id")
+    )
+    .where("rb.book_rank", "<=", 3)
+    .where("bb.author_name", "like", `${letter}%`)
+    .selectAll()
+    .orderBy("bb.author_name")
+    .orderBy("bb.year", "desc")
 }
 
 export {
