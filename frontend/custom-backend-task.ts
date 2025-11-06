@@ -1,4 +1,5 @@
 import { DatabaseSync, StatementSync } from "node:sqlite"
+import { groupByName } from "./utils.ts"
 
 const database = new DatabaseSync("../books.db", {
   readOnly: true,
@@ -123,7 +124,7 @@ export function getAvailableYears() {
 }
 
 export function getCountOfAuthorsByStartingFamilyNameLetter() {
-  return getAuthorsCountByLetter.all()
+  return groupByName(getAuthorsCountByLetter.all(), 50)
 }
 
 interface IAuthorWithBooks {
@@ -132,10 +133,11 @@ interface IAuthorWithBooks {
   slug: string
   lifeSpan?: string
   books: any[]
+  total_books: number
 }
 
 export function getAuthorsByLetter(letter: string) {
-  const data = getAuthorsByLetterQuery.all(letter)
+  const data = getAuthorsByLetterQuery.all(`${letter}%`)
 
   return data
     .reduce((acc, book) => {
@@ -148,6 +150,7 @@ export function getAuthorsByLetter(letter: string) {
           name: book.author_name,
           slug: book.author_slug,
           lifeSpan: book.author_life_span,
+          totalBooks: book.total_books,
           books: [book],
         })
       }
@@ -277,7 +280,7 @@ ORDER BY b.year ASC
 )
 
 const getAuthorsCountByLetter = database.prepare(
-  `SELECT upper(substring(family_name, 1, 1)) char, COUNT(*) count FROM authors GROUP BY upper(substring(family_name, 1, 1))`
+  `SELECT upper(substring(family_name, 1, 5)) prefix, COUNT(*) amount FROM authors GROUP BY upper(substring(family_name, 1, 5))`
 )
 
 const getAuthorsByLetterQuery = database.prepare(
@@ -314,7 +317,7 @@ INNER JOIN ranked_books rb
   AND rb.book_id = b.id
 WHERE 
   rb.book_rank <= 3
-  AND UPPER(SUBSTRING(a.family_name, 1, 1)) = ?
+  AND a.family_name LIKE ?
 ORDER BY 
   a.family_name, 
   a.given_name, 
