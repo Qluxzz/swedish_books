@@ -35,16 +35,16 @@ async function getAuthorsCountByLetter() {
   return await db
     .selectFrom("authors")
     .select([
-      sql`upper(substring(family_name, 1, 1))`.as("char"),
+      sql`upper(substring(family_name, 1, 5))`.as("char"),
       sql`count(*)`.as("count"),
     ])
-    .groupBy(sql`upper(substring(family_name, 1, 1))`)
+    .groupBy(sql`upper(substring(family_name, 1, 5))`)
     .execute()
 }
 
 async function getAuthorsByLetter(letter: string) {
   return await bookBaseQuery
-    .where(sql`upper(substring(family_name, 1, 1))`, "=", letter)
+    .where("authors.family_name", "like", letter)
     .execute()
 }
 
