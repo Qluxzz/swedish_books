@@ -81,20 +81,6 @@ data =
     BackendTask.succeed ()
 
 
-linkToHomePage : Html msg
-linkToHomePage =
-    Html.a
-        [ Html.Attributes.class "back"
-        , Html.Attributes.href (Route.toString Route.Index)
-        ]
-        [ Html.img
-            [ Html.Attributes.alt "Back to home"
-            , Html.Attributes.src "/back.svg"
-            ]
-            []
-        ]
-
-
 {-| Adds noreferrer and nofollow and opens the link in a new tab
 -}
 externalLink : List (Html.Attribute msg) -> List (Html.Html msg) -> Html.Html msg
@@ -112,19 +98,10 @@ view :
     -> (Msg -> msg)
     -> View msg
     -> { body : List (Html msg), title : String }
-view _ page _ _ pageView =
-    let
-        isOnIndexPage =
-            Maybe.map ((==) Route.Index) page.route |> Maybe.withDefault False
-    in
+view _ _ _ _ pageView =
     { body =
         [ Html.header []
-            [ if not isOnIndexPage then
-                linkToHomePage
-
-              else
-                Html.text ""
-            , Html.h1 []
+            [ Html.h1 []
                 [ Html.text pageView.title
                 ]
             ]
