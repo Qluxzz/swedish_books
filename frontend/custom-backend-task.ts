@@ -124,7 +124,7 @@ export function getAvailableYears() {
 }
 
 export function getCountOfAuthorsByStartingFamilyNameLetter() {
-  return groupByName(getAuthorsCountByLetter.all(), 50)
+  return groupByName(getAuthorsCountByLetter.all(), 60)
 }
 
 interface IAuthorWithBooks {
@@ -136,8 +136,8 @@ interface IAuthorWithBooks {
   total_books: number
 }
 
-export function getAuthorsByLetter(letter: string) {
-  const data = getAuthorsByLetterQuery.all(`${letter}%`)
+export function getAuthorsByLetter(familyNamePrefix: string) {
+  const data = getAuthorsByLetterQuery.all(`${familyNamePrefix}%`)
 
   return data
     .reduce((acc, book) => {

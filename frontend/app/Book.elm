@@ -1,4 +1,4 @@
-module Book exposing (Author, Book, ViewOptions, decode, lifeSpanView, view)
+module Book exposing (Author, Book, ViewOptions, authorNameView, decode, lifeSpanView, view)
 
 import Dict
 import Head.Seo exposing (book)
@@ -135,6 +135,11 @@ view { linkToAuthor, linkToYear } book =
         , Html.label [ Html.Attributes.class "find", Html.Attributes.for <| "show-links-" ++ String.fromInt book.id ] [ Html.text "Hitta boken!" ]
         , links book
         ]
+
+
+authorNameView : { r | name : String, lifeSpan : Maybe String } -> String
+authorNameView { name, lifeSpan } =
+    [ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " "
 
 
 bookAuthor : Bool -> Author -> Html.Html msg
