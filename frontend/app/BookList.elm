@@ -25,7 +25,7 @@ view viewOptions ratedBooks unratedBooks =
       else
         section
             "Mysterierna"
-            "Dessa böcker är inte ens betygsatta, är de oslipade diamanter eller finns det en anledning till att de är okänd"
+            "Dessa böcker är inte ens betygsatta, är de oslipade diamanter eller är de bortglömda av en anledning?"
             (List.map bView unratedBooks)
     ]
 

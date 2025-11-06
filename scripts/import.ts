@@ -135,7 +135,7 @@ function getImageId(url?: string): string | null {
 
 // MAIN SCRIPT
 
-const DATABASE_FILE = path.resolve(import.meta.dirname, "books.db")
+const DATABASE_FILE = path.resolve(import.meta.dirname, "../books.db")
 const JSON_FOLDER = path.resolve(import.meta.dirname, "cache/json")
 
 const files = readdirSync(JSON_FOLDER, { recursive: true })
