@@ -6,24 +6,14 @@ import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
 import { Image, Release } from "./utils/release.ts"
 import { getIdentifier, throwError } from "./utils/helpers.ts"
-import slugify from "slugify"
 import path from "node:path"
+import getSlug from "./utils/slug.ts"
+import { exit } from "node:process"
 
-const DATABASE_FILE = path.resolve(import.meta.dirname, "books.db")
-const JSON_FOLDER = path.resolve(import.meta.dirname, "cache/json")
+// Functions
 
-if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
-
-const db = new DatabaseSync(DATABASE_FILE)
-
-db.exec(`
-CREATE TABLE genres (
-  id INTEGER PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL
-);
-`)
-
-db.exec(`
+function setupDatabaseTables(db: DatabaseSync) {
+  db.exec(`
 CREATE TABLE authors (
   id INTEGER PRIMARY KEY,
   libris_id TEXT UNIQUE NOT NULL,
@@ -33,7 +23,7 @@ CREATE TABLE authors (
 );
 `)
 
-db.exec(`
+  db.exec(`
 CREATE TABLE books (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
@@ -45,7 +35,7 @@ CREATE TABLE books (
 );
 `)
 
-db.exec(`
+  db.exec(`
 CREATE TABLE book_covers (
   id INTEGER PRIMARY KEY,
   book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE UNIQUE,
@@ -54,7 +44,7 @@ CREATE TABLE book_covers (
 );
 `)
 
-db.exec(`
+  db.exec(`
 CREATE TABLE goodreads (
   id INTEGER PRIMARY KEY,
   book_id INTEGER REFERENCES books(id) ON DELETE CASCADE UNIQUE,
@@ -64,41 +54,7 @@ CREATE TABLE goodreads (
   book_url TEXT NOT NULL
 );
 `)
-
-db.exec(`
-CREATE TABLE book_genre (
-  book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
-  genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
-  PRIMARY KEY (book_id, genre_id)
-);
-`)
-
-const insertAuthor = db.prepare(
-  "INSERT OR IGNORE INTO authors (libris_id, name, life_span, slug) VALUES (?, ?, ?, ?)"
-)
-const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
-
-const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year, slug)
-  VALUES (?, ?, ?, ?)
-  ON CONFLICT(author_id, slug)
-  DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
-  RETURNING id
-`)
-
-const insertGenre = db.prepare("INSERT OR IGNORE INTO genres(name) VALUES(?)")
-const getGenreId = db.prepare("SELECT id FROM genres WHERE name = ?")
-const insertBookGenre = db.prepare(
-  "INSERT OR IGNORE INTO book_genre(book_id, genre_id) VALUES (?, ?)"
-)
-
-const insertGoodreadsData = db.prepare(
-  "INSERT OR IGNORE INTO goodreads(book_id, pages, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?, ?)"
-)
-
-const insertBookCoverImage = db.prepare(
-  "INSERT OR IGNORE INTO book_covers (book_id, host, image_id) VALUES (?, ?, ?)"
-)
+}
 
 const currentYear = new Date().getFullYear()
 const yearRegex = /\d{4}/g
@@ -171,17 +127,55 @@ function authorHasValidLifeSpan(lifeSpan: string): {
   }
 }
 
-// Since we filter out all children's books earlier,
-// we might get books that are by children's authors but are not tagged as such
-const ignoredAuthors = ["Astrid Lindgren", "Gunilla Bergström", "Åke Holmberg"]
-
 const NO_BOOK_COVER_URL = "nophoto/book/111x148"
 function getImageId(url?: string): string | null {
   if (!url || url.includes(NO_BOOK_COVER_URL)) return null
   return url.split("/").slice(-2).join("/").split(".")[0] || null
 }
 
+// MAIN SCRIPT
+
+const DATABASE_FILE = path.resolve(import.meta.dirname, "books.db")
+const JSON_FOLDER = path.resolve(import.meta.dirname, "cache/json")
+
 const files = readdirSync(JSON_FOLDER, { recursive: true })
+if (files.length === 0) {
+  console.error(
+    `Failed to find any json files in ${JSON_FOLDER}. Have you run fetch_original_swedish_books.ts?`
+  )
+  exit(1)
+}
+
+// Remove database file if it exists
+if (existsSync(DATABASE_FILE)) unlinkSync(DATABASE_FILE)
+
+const db = new DatabaseSync(DATABASE_FILE)
+setupDatabaseTables(db)
+
+const insertAuthor = db.prepare(
+  "INSERT OR IGNORE INTO authors (libris_id, name, life_span, slug) VALUES (?, ?, ?, ?)"
+)
+const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
+
+const insertBook = db.prepare(`
+  INSERT INTO books(title, author_id, year, slug)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(author_id, slug)
+  DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
+  RETURNING id
+`)
+
+const insertGoodreadsData = db.prepare(
+  "INSERT OR IGNORE INTO goodreads(book_id, pages, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?, ?)"
+)
+
+const insertBookCoverImage = db.prepare(
+  "INSERT OR IGNORE INTO book_covers (book_id, host, image_id) VALUES (?, ?, ?)"
+)
+
+// Since we filter out all children's books earlier,
+// we might get books that are by children's authors but are not tagged as such
+const ignoredAuthors = ["Astrid Lindgren", "Gunilla Bergström", "Åke Holmberg"]
 
 console.time("Import time")
 db.prepare("BEGIN").run()
@@ -203,19 +197,15 @@ for (const file of files) {
       book.authorId,
       book.author,
       book.lifeSpan ?? null,
-      slugify.default(book.author, { lower: true, locale: "sv", strict: true })
+      getSlug(book.author)
     )
     const authorId =
       getAuthorId.get(book.authorId)?.id ??
       throwError(`Failed to get author id for ${book.author}`)
 
     const bookId =
-      insertBook.get(
-        book.title,
-        authorId,
-        year,
-        slugify.default(book.title, { lower: true, locale: "sv", strict: true })
-      )?.id ?? throwError(`Failed to get book id for ${book.title}`)
+      insertBook.get(book.title, authorId, year, getSlug(book.title))?.id ??
+      throwError(`Failed to get book id for ${book.title}`)
 
     // We want to get the cover of the oldest release
     const oldestToNewest = book.images.toSorted((a, b) =>
@@ -243,13 +233,6 @@ for (const file of files) {
 
       const imageId = getImageId(book.goodreads.imageUrl)
       if (imageId) insertBookCoverImage.run(bookId, "goodreads", imageId)
-    }
-
-    for (const genre of book.genres) {
-      insertGenre.run(genre)
-      const { id: genreId } =
-        getGenreId.get(genre) ?? throwError("Expected to get a genre id")
-      insertBookGenre.run(bookId, genreId)
     }
   }
 }

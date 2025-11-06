@@ -253,6 +253,7 @@ goodReadsQueue.on(
 
 await sparqlQueue.onIdle()
 log("All sparqle requests are done!")
+log(`There are ${goodReadsQueue.size} Goodreads requests left`)
 await goodReadsQueue.onIdle()
 log("All goodreads requests are done!")
 
@@ -285,4 +286,6 @@ fileQueue.addAll(
 
 await fileQueue.onIdle()
 
-log("Done! You can now run import.ts to generate the SQLite database file")
+log(
+  "Done! You can now run 'npm run import' to generate the SQLite database file"
+)

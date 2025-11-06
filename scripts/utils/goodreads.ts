@@ -1,5 +1,6 @@
 import { getFileOrDownload, log } from "./helpers.ts"
-import slugify from "slugify"
+import { Release } from "./release.ts"
+import getSlug from "./slug.ts"
 
 interface Goodreads {
   imageUrl: string
@@ -42,7 +43,7 @@ async function getByTitleAndAuthor(
   title: string,
   author: string
 ): Promise<Goodreads | null> {
-  const slug = slugify.default(`${title}-${author}`, { lower: true })
+  const slug = getSlug(`${title}-${author}`)
 
   const search = encodeURIComponent(`${title} ${author}`)
 
@@ -55,35 +56,37 @@ async function getByTitleAndAuthor(
   const searchResult = JSON.parse(data) as Goodreads[]
   if (searchResult.length === 0) return null
 
-  const normalizedTitle = title.toLowerCase()
-  const normalizedAuthor = author.toLowerCase()
+  const slugTitle = getSlug(title)
+  const slugAuthor = getSlug(author)
 
   // Check that the search results include something with the same author or title
-  const matching = searchResult.find(
-    (x) =>
-      x.bookTitleBare.toLowerCase() === normalizedTitle ||
-      x.title.toLowerCase() === normalizedTitle ||
-      x.author.name.toLowerCase() === normalizedAuthor
+  return (
+    searchResult.find(
+      (x) =>
+        getSlug(x.bookTitleBare) === slugTitle &&
+        getSlug(x.author.name) === slugAuthor
+    ) ?? null
   )
-
-  return matching ?? null
 }
 
 /**
- * Fetch data from Goodreads using ISBN or a combination of title and author
+ * Try to fetch data from Goodreads using ISBN and a combination of title and author
  * @param book
  * @returns goodreads data for book or null
  */
-async function getDataFromGoodReads<
-  T extends { isbn?: string; title: string; author: string }
->(book: T): Promise<Goodreads | null> {
+async function getDataFromGoodReads(book: Release): Promise<Goodreads | null> {
   try {
-    return book.isbn
-      ? await getByISBN(book.isbn)
-      : await getByTitleAndAuthor(book.title, book.author)
+    for (const instance of book.instances) {
+      if (!instance.isbn) continue
+
+      const result = await getByISBN(instance.isbn)
+      if (result) return result
+    }
+
+    return await getByTitleAndAuthor(book.title, book.author)
   } catch (error) {
     log(
-      `Something went wrong when getting info for book ${book.title} ${book.author} ${book.isbn}. Error was: ${error}`
+      `Something went wrong when getting info for book ${book.title} ${book.author}. Error was: ${error}`
     )
     return null
   }
