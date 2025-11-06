@@ -16,11 +16,11 @@ test.describe("Authors pages", () => {
   }) => {
     const links = await page
       .getByRole("link", {
-        name: new RegExp(`[A-ZÅÄÖ] \\([1-9]\\d+?\\)`),
+        name: new RegExp(`^[A-ZÅÄÖ]+ \\([1-9]\\d+?\\)$`),
       })
       .all()
 
-    expect(links.length).toBeGreaterThan(10)
+    expect(links.length).toBeGreaterThan(20)
 
     for (const link of links) {
       await expect(link).toBeVisible()
