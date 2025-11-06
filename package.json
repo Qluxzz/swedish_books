@@ -1,0 +1,29 @@
+{
+  "name": "elm-pages-app",
+  "type": "module",
+  "scripts": {
+    "postinstall": "cd frontend && elm-tooling install",
+    "start": "cd frontend && elm-pages dev",
+    "build": "cd frontend && elm-pages build",
+    "test": "npx playwright test",
+    "fetch": "npx tsx scripts/fetch_books.ts",
+    "import": "npx tsx scripts/import.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.10.0",
+    "elm-codegen": "^0.6.1",
+    "elm-optimize-level-2": "^0.3.5",
+    "elm-pages": "3.0.24",
+    "elm-review": "^2.12.0",
+    "elm-tooling": "^1.15.1",
+    "lamdera": "^0.19.1-1.3.2",
+    "p-queue": "^9.0.0",
+    "slugify": "^1.6.6",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.6",
+    "wait-on": "^9.0.1"
+  }
+}

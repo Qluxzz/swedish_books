@@ -10,7 +10,9 @@ But I also want to highlight more today unknown/forgotten Swedish authors and wo
 
 # Local development
 
-Go to the scripts folder and run `npx tsx fetch_original_swedish_books.ts`
+Run `npm install`
+
+Run `npm run fetch`
 This will:
 
 - For each year from 1850 to 2024, call the SPARQL endpoint and fetch the data available
@@ -20,7 +22,13 @@ This will:
 
 If anything fails during this, Goodreads start returning 503 because you're getting throttled, wait a bit then re-run the script, since successful response from both the SPARQL and Goodreads API is cached, you can resume the progress right where it stopped.
 
-After this process is done, run `npx tsx import.ts` which create SQLite database that is used by elm-pages.
+After this process is done, run `npm run import` which create SQLite database that is used by elm-pages.
+
+Run `npm start` which starts the development server on [http://localhost:1234](http://localhost:1234)
+
+# Testing
+
+There is testing
 
 # Information
 
