@@ -26,4 +26,27 @@ test.describe("Authors pages", () => {
       await expect(link).toBeVisible()
     }
   })
+
+  test("Clicking a prefix takes you to a list of authors and their top three books", async ({
+    page,
+  }) => {
+    const link = await page.getByRole("link", {
+      name: "HU",
+    })
+
+    await expect(link).toBeVisible()
+
+    await link.click()
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Författare på HU" })
+    ).toBeVisible()
+
+    await expect(
+      page.getByRole("heading", {
+        level: 3,
+        name: "Bengt Hubendick (1916-2012)",
+      })
+    ).toBeVisible()
+  })
 })
