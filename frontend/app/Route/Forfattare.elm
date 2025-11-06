@@ -85,7 +85,7 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = "Forfattare"
+    { title = "Författare"
     , body =
         [ Html.ul []
             (app.data.data
