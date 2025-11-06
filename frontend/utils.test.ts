@@ -23,6 +23,18 @@ test.each([
   ],
   [
     [
+      { prefix: "Abra", amount: 1 },
+      { prefix: "Andr", amount: 1 },
+      { prefix: "Alst", amount: 50 },
+    ],
+    50,
+    [
+      { prefix: "Ab-An", amount: 2 },
+      { prefix: "Al", amount: 50 },
+    ],
+  ],
+  [
+    [
       { prefix: "Ande", amount: 10 },
       { prefix: "Borg", amount: 10 },
     ],
