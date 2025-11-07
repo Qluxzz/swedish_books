@@ -47,7 +47,7 @@ main {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-12) var(--spacing-4);
+  padding: var(--spacing-4);
 
   display: flex;
   flex-direction: column;
@@ -56,19 +56,20 @@ main {
 
 /* Header */
 header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  line-height: 1;
-
   background-color: var(--color-muted);
-  padding: var(--spacing-8);
+  padding: var(--spacing-4);
 
   h1 {
     font-family: var(--font-serif);
     font-weight: bold;
     color: var(--color-foreground);
     text-wrap: balance;
+    line-height: 1;
+  }
+
+  h2 {
+    margin-top: 15px;
+    line-height: 1.2;
   }
 }
 

@@ -1,8 +1,9 @@
-module BookList exposing (..)
+module BookList exposing (view)
 
 import Book
 import Html
 import Html.Attributes
+import Section
 
 
 view : Book.ViewOptions -> List Book.Book -> List Book.Book -> List (Html.Html msg)
@@ -15,25 +16,12 @@ view viewOptions ratedBooks unratedBooks =
         Html.text ""
 
       else
-        section
-            "Betygsatta böcker"
-            "Dessa böcker hittades på Goodreads så de är åtminstone lite kända"
-            (List.map bView ratedBooks)
+        Section.ratedBooks
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map bView ratedBooks) ]
     , if List.isEmpty unratedBooks then
         Html.text ""
 
       else
-        section
-            "Mysterierna"
-            "Dessa böcker är inte ens betygsatta, är de oslipade diamanter eller är de bortglömda av en anledning?"
-            (List.map bView unratedBooks)
+        Section.unratedBooks
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map bView unratedBooks) ]
     ]
-
-
-section : String -> String -> List (Html.Html msg) -> Html.Html msg
-section title description books =
-    Html.section [ Html.Attributes.class "section" ]
-        [ Html.h2 [ Html.Attributes.class "section-title" ] [ Html.text title ]
-        , Html.p [ Html.Attributes.class "section-description" ] [ Html.text description ]
-        , Html.div [ Html.Attributes.class "book-grid" ] books
-        ]

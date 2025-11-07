@@ -5,10 +5,20 @@ test.describe("application", () => {
     await page.goto("/")
   })
 
+  test("Looks as expected", async ({ page }) => {
+    test.setTimeout(60_000)
+    await page.locator("footer").scrollIntoViewIfNeeded()
+    await expect(page).toHaveScreenshot({
+      fullPage: true,
+      maxDiffPixelRatio: 0.02,
+      timeout: 30_000,
+    })
+  })
+
   test("Has expected header", async ({ page }) => {
     await page
       .getByRole("heading", {
-        level: 1,
+        level: 2,
         name: "Mindre kända svenska originalverk",
       })
       .waitFor({ state: "visible" })
@@ -97,7 +107,7 @@ test.describe("application", () => {
 
     expect(page.url()).toMatch(/\/forfattare\/\d+\/per-olof-sundman/)
     await expect(
-      page.getByRole("heading", { level: 1, name: authorAndLifeSpan })
+      page.getByRole("heading", { level: 2, name: authorAndLifeSpan })
     ).toBeVisible()
 
     const books = await page.locator(".book-card").all()
@@ -130,7 +140,7 @@ test.describe("application", () => {
 
     expect(page.url()).toContain(`/ar/${year}`)
     await expect(
-      page.getByRole("heading", { level: 1, name: `Böcker för år ${year}` })
+      page.getByRole("heading", { level: 2, name: `Böcker för år ${year}` })
     ).toBeVisible()
 
     // This is the same book on the year page
@@ -161,7 +171,7 @@ test.describe("application", () => {
   test("There's a list of year links at the bottom of the home page", async ({
     page,
   }) => {
-    const yearSection = page.locator(".section:last-child", {
+    const yearSection = page.locator("section:last-child", {
       has: page.getByText("Hitta titlar per år"),
     })
     await expect(yearSection).toBeVisible()
@@ -193,7 +203,7 @@ test.describe("application", () => {
       expect(page.url()).toContain("/betygsatt/1")
       await expect(
         page.getByRole("heading", {
-          level: 1,
+          level: 2,
           name: "Visar alla betygsatta böcker",
         })
       ).toBeVisible()
@@ -218,7 +228,7 @@ test.describe("application", () => {
 
       await expect(
         page.getByRole("heading", {
-          level: 1,
+          level: 2,
           name: "Visar alla betygsatta böcker",
         })
       ).toBeVisible()
@@ -267,7 +277,7 @@ test.describe("application", () => {
       expect(page.url()).toContain("/ej-betygsatt/1")
       await expect(
         page.getByRole("heading", {
-          level: 1,
+          level: 2,
           name: "Visar alla ej betygsatta böcker",
         })
       ).toBeVisible()
@@ -292,7 +302,7 @@ test.describe("application", () => {
 
       await expect(
         page.getByRole("heading", {
-          level: 1,
+          level: 2,
           name: "Visar alla ej betygsatta böcker",
         })
       ).toBeVisible()

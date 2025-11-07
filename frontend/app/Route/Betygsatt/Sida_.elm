@@ -83,7 +83,7 @@ view app shared =
     in
     { title = "Visar alla betygsatta böcker (Sida " ++ app.routeParams.sida ++ " av " ++ String.fromInt app.data.pages ++ ")"
     , body =
-        [ Html.section [ Html.Attributes.class "section" ]
+        [ Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
                 (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.titles.data)
