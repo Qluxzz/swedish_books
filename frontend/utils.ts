@@ -32,7 +32,7 @@ function groupByPrefixSize(
 
       return {
         prefix,
-        amount: items?.reduce((acc, x) => acc + x.amount, 0) ?? 0,
+        amount: count,
       }
     })
     .flat()
