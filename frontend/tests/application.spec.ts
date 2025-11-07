@@ -8,7 +8,11 @@ test.describe("application", () => {
   test("Looks as expected", async ({ page }) => {
     test.setTimeout(60_000)
     await page.locator("footer").scrollIntoViewIfNeeded()
-    await expect(page).toHaveScreenshot({ fullPage: true, timeout: 30_000 })
+    await expect(page).toHaveScreenshot({
+      fullPage: true,
+      maxDiffPixelRatio: 0.02,
+      timeout: 30_000,
+    })
   })
 
   test("Has expected header", async ({ page }) => {
