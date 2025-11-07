@@ -89,7 +89,7 @@ view app _ =
     in
     { title = title
     , body =
-        [ Html.section [ Html.Attributes.class "section" ]
+        [ Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
                 (List.map (Book.view { linkToAuthor = False, linkToYear = True }) app.data.titles)
