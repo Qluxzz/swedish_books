@@ -1,18 +1,14 @@
 import { test, expect, Page } from "@playwright/test"
 
-test.describe("Home page look", () => {
-  test.use({ viewport: { width: 1920, height: 8000 } })
-
-  // Regression testing so nothing unexpected has changed
-  test("Looks as expected", async ({ page }) => {
-    await page.goto("/")
-    await expect(page).toHaveScreenshot({ timeout: 60_000 })
-  })
-})
-
 test.describe("application", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/")
+  })
+
+  test("Looks as expected", async ({ page }) => {
+    test.setTimeout(60_000)
+    await page.locator("footer").scrollIntoViewIfNeeded()
+    await expect(page).toHaveScreenshot({ fullPage: true, timeout: 30_000 })
   })
 
   test("Has expected header", async ({ page }) => {
