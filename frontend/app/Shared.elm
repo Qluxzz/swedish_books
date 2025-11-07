@@ -1,4 +1,4 @@
-module Shared exposing (Data, Model, Msg(..), SharedMsg(..), externalLink, template)
+module Shared exposing (Data, Model, Msg, SharedMsg(..), externalLink, template)
 
 import BackendTask exposing (BackendTask)
 import Effect exposing (Effect)
@@ -24,9 +24,8 @@ template =
     }
 
 
-type Msg
-    = SharedMsg SharedMsg
-    | MenuClicked
+type alias Msg =
+    ()
 
 
 type alias Data =
@@ -38,8 +37,7 @@ type SharedMsg
 
 
 type alias Model =
-    { showMenu : Bool
-    }
+    ()
 
 
 init :
@@ -56,19 +54,14 @@ init :
             }
     -> ( Model, Effect Msg )
 init _ _ =
-    ( { showMenu = False }
+    ( ()
     , Effect.none
     )
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
-    case msg of
-        SharedMsg _ ->
-            ( model, Effect.none )
-
-        MenuClicked ->
-            ( { model | showMenu = not model.showMenu }, Effect.none )
+    ( (), Effect.none )
 
 
 subscriptions : UrlPath -> Model -> Sub Msg
@@ -101,9 +94,12 @@ view :
 view _ _ _ _ pageView =
     { body =
         [ Html.header []
-            [ Html.h1 []
-                [ Html.text pageView.title
+            [ Html.a [ Html.Attributes.href (Route.toString Route.Index) ]
+                [ Html.h1 []
+                    [ Html.text "Boklåda.se"
+                    ]
                 ]
+            , Html.h2 [] [ Html.text pageView.title ]
             ]
         , Html.main_ []
             [ Html.div [ Html.Attributes.class "container" ]
@@ -121,5 +117,5 @@ view _ _ _ _ pageView =
             , externalLink [ Html.Attributes.href "https://github.com/Qluxzz/swedish_books" ] [ Html.text "Källkod" ]
             ]
         ]
-    , title = pageView.title
+    , title = "Boklåda.se | " ++ pageView.title
     }
