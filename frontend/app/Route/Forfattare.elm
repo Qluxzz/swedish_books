@@ -8,6 +8,8 @@ module Route.Forfattare exposing (Model, Msg, RouteParams, route, Data, ActionDa
 
 import BackendTask
 import BackendTask.Custom
+import Dict
+import Dict.Extra
 import FatalError
 import Head
 import Html
@@ -78,13 +80,36 @@ view app shared =
     { title = "Författare"
     , body =
         [ Html.div [ Html.Attributes.class "prefixes" ]
-            (app.data.data
-                |> List.map
-                    (\( bokstav, count ) ->
-                        Html.a [ Html.Attributes.href (Route.toString (Route.Forfattare__Bokstav_ { bokstav = bokstav })) ]
-                            [ Html.text <| bokstav ++ " (" ++ String.fromInt count ++ ")"
-                            ]
-                    )
-            )
+            [ Html.ul []
+                (app.data.data
+                    |> Dict.Extra.groupBy (Tuple.first >> String.left 1)
+                    |> Dict.toList
+                    |> List.map
+                        (\( prefix, items ) ->
+                            case items of
+                                [ i ] ->
+                                    authorLink i
+
+                                _ ->
+                                    Html.details []
+                                        [ Html.summary [] [ Html.text prefix ]
+                                        , Html.ul []
+                                            (items
+                                                |> List.map authorLink
+                                            )
+                                        ]
+                        )
+                )
+            ]
         ]
     }
+
+
+authorLink : ( String, Int ) -> Html.Html msg
+authorLink ( bokstav, count ) =
+    Html.li []
+        [ Html.a
+            [ Html.Attributes.href (Route.toString (Route.Forfattare__Bokstav_ { bokstav = bokstav })) ]
+            [ Html.text <| bokstav ++ " (" ++ String.fromInt count ++ " författare)"
+            ]
+        ]

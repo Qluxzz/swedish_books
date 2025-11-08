@@ -9,7 +9,6 @@ module Route.Forfattare.Bokstav_ exposing (Model, Msg, RouteParams, route, Data,
 import BackendTask
 import BackendTask.Custom
 import Book
-import BookList
 import FatalError
 import Head
 import Html
@@ -91,7 +90,7 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = "Författare på " ++ (Url.percentDecode app.routeParams.bokstav |> Maybe.withDefault "") ++ " (" ++ String.fromInt (List.length app.data.authors) ++ ")"
+    { title = (Url.percentDecode app.routeParams.bokstav |> Maybe.withDefault "") ++ " (" ++ String.fromInt (List.length app.data.authors) ++ ")"
     , body =
         [ Html.section [ Html.Attributes.class "authors" ]
             (app.data.authors
