@@ -91,7 +91,7 @@ view :
     -> (Msg -> msg)
     -> View msg
     -> { body : List (Html msg), title : String }
-view _ _ _ _ pageView =
+view _ page _ _ pageView =
     { body =
         [ Html.header []
             [ Html.a [ Html.Attributes.href (Route.toString Route.Index) ]
@@ -99,6 +99,7 @@ view _ _ _ _ pageView =
                     [ Html.text "Boklåda.se"
                     ]
                 ]
+            , Html.h2 [] ([ Maybe.andThen breadCrumb page.route, Just <| Html.text pageView.title ] |> List.filterMap identity |> List.intersperse (Html.text " / "))
             ]
         , Html.main_ []
             [ Html.div [ Html.Attributes.class "container" ]
@@ -118,3 +119,28 @@ view _ _ _ _ pageView =
         ]
     , title = "Boklåda.se | " ++ pageView.title
     }
+
+
+breadCrumb : Route -> Maybe (Html.Html msg)
+breadCrumb route =
+    case route of
+        Route.Index ->
+            Nothing
+
+        Route.Forfattare__Id___Namn_ _ ->
+            Just <| Html.a [ Html.Attributes.href (Route.toString Route.Forfattare) ] [ Html.text "Författare" ]
+
+        Route.Forfattare__Bokstav_ _ ->
+            Just <| Html.a [ Html.Attributes.href (Route.toString Route.Forfattare) ] [ Html.text "Författare" ]
+
+        Route.Ar__Tal_ _ ->
+            Nothing
+
+        Route.Betygsatt__Sida_ _ ->
+            Nothing
+
+        Route.EjBetygsatt__Sida_ _ ->
+            Nothing
+
+        Route.Forfattare ->
+            Nothing

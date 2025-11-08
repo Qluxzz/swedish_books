@@ -291,9 +291,23 @@ footer {
 }
 
 .prefixes {
-  display: flex;
-  flex-wrap: wrap;
   gap: 10px;
+
+  ul {
+    list-style-position: inside;
+  }
+
+  details ul {
+    padding: 10px;
+    background-color: #ccc;
+    list-style: none;
+
+    a {
+      color: #000;
+    }
+  }
+
+
 }
 
 .container:has(.authors) {
