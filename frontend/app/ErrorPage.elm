@@ -51,6 +51,15 @@ internalError =
 
 view : ErrorPage -> Model -> View Msg
 view error model =
+    let
+        title =
+            case error of
+                NotFound ->
+                    "Page Not Found"
+
+                InternalError string ->
+                    "Unexpected Error"
+    in
     { body =
         [ Html.div []
             [ Html.p []
@@ -64,13 +73,8 @@ view error model =
                 ]
             ]
         ]
-    , title =
-        case error of
-            NotFound ->
-                "Page Not Found"
-
-            InternalError string ->
-                "Unexpected Error"
+    , title = Just title
+    , documentTitle = title
     }
 
 

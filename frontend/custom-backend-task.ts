@@ -14,6 +14,9 @@ import {
 
 import { getHomePageData } from "./custom-tasks/home-page-task.ts"
 
+import { getAllBookUrls, getBookById } from "./custom-tasks/book-task.ts"
+
+export { getAllBookUrls, getBookById }
 export { getAuthors, getTitlesForAuthor }
 export { getAvailableYears, getTitlesForYear }
 export { getHomePageData }

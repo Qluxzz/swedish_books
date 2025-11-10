@@ -69,9 +69,10 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = "Böcker för år " ++ app.routeParams.tal
+    { title = Just <| "Böcker för år " ++ app.routeParams.tal
+    , documentTitle = "Böcker för år " ++ app.routeParams.tal
     , body =
-        BookList.view { linkToYear = False, linkToAuthor = True } app.data.ratedBooks app.data.unratedBooks
+        BookList.view { linkToYear = False, linkToAuthor = True, linkToTitle = True } app.data.ratedBooks app.data.unratedBooks
     }
 
 
