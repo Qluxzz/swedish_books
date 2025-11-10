@@ -16,6 +16,8 @@ jobs:
         run: npm ci
       - name: Build page
         run: npm run build
+      - name: Clean js assets from build
+        run: cd frontend && bash remove-js-assets.sh
 
       - name: Upload production artifacts
         uses: actions/upload-pages-artifact@v3
