@@ -8,8 +8,8 @@
     "test": "npx playwright test",
     "fetch": "npx tsx scripts/fetch_books.ts",
     "import": "npx tsx scripts/import.ts",
-    "db:codegen": "export DATABASE_URL='books.db' && npx kysely-codegen",
-    "db:verify": "export DATABASE_URL='books.db' && npx kysely-codegen --verify"
+    "db:codegen": "export DATABASE_URL='books.db' && npx kysely-codegen --dialect sqlite",
+    "db:verify": "npm run db:codegen -- --verify"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
