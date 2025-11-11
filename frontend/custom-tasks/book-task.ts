@@ -11,7 +11,7 @@ async function getBookById(id: string) {
 
 async function getAllBookUrls() {
   return (await db.selectFrom("books").select(["id", "slug"]).execute()).map(
-    (x) => [x.id, x.slug]
+    (x) => [x.id, x.slug.slice(0, 150)]
   )
 }
 
