@@ -7,7 +7,7 @@ export const db = new Kysely<DB>({
   dialect: new SqliteDialect({
     database: new Database("../books.db"),
   }),
-  log: ["query", "error"],
+  log: ["error"], // Add "query" to log all queries
 })
 
 export const bookBaseQuery = db
