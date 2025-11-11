@@ -75,13 +75,17 @@ data =
         |> BackendTask.allowFatal
 
 
+title =
+    "Mindre kända svenska originalverk"
+
+
 head :
     App Data ActionData RouteParams
     -> List Head.Tag
 head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "Mindre kända svenska originalverk"
+        , siteName = title
         , image =
             { url = [ "images", "icon-png.png" ] |> UrlPath.join |> Pages.Url.fromPath
             , alt = "elm-pages logo"
@@ -90,7 +94,7 @@ head _ =
             }
         , description = "Hitta svenska skönlitterära originalverk som du kanske inte känner till"
         , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
-        , title = "Mindre kända svenska originalverk"
+        , title = title
         }
         |> Seo.website
 
@@ -100,14 +104,15 @@ view :
     -> Shared.Model
     -> View (PagesMsg Msg)
 view app _ =
-    { title = "Mindre kända svenska originalverk"
+    { title = Just title
+    , documentTitle = title
     , body =
         [ Section.ratedBooks
-            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.ratedBooks)
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.ratedBooks)
             , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.Betygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla betygsatta böcker" ] ]
             ]
         , Section.unratedBooks
-            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.unratedBooks)
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.unratedBooks)
             , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.EjBetygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla ej betygsatta böcker" ] ]
             ]
         , Section.default "Hitta titlar per år" "" [ titlesPerYearView app.data.titlesPerYear Nothing ]

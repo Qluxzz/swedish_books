@@ -1,4 +1,4 @@
-module Book exposing (Book, ViewOptions, decode, lifeSpanView, view)
+module Book exposing (Book, Goodreads, ViewOptions, decode, toImageUrl, view, wrapWithParens)
 
 import Dict
 import Head.Seo exposing (book)
@@ -7,11 +7,11 @@ import Html.Attributes
 import Json.Decode
 import Route
 import Serializer.Json.Extra
-import Shared
 
 
 type alias Book =
     { id : Int
+    , slug : String
     , title : String
     , author : Author
     , year : Int
@@ -58,8 +58,9 @@ toImageUrl host id =
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\id title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
+        (\id slug title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
             { id = id
+            , slug = slug
             , title = title
             , author = { id = authorId, name = authorName, slug = authorSlug, lifeSpan = lifeSpan }
             , year = year
@@ -74,6 +75,7 @@ decode =
             }
         )
         |> Serializer.Json.Extra.andMap (Json.Decode.field "id" Json.Decode.int)
+        |> Serializer.Json.Extra.andMap (Json.Decode.field "slug" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "title" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_id" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_name" Json.Decode.string)
@@ -88,27 +90,36 @@ decode =
 
 
 type alias ViewOptions =
-    { linkToAuthor : Bool, linkToYear : Bool }
+    { linkToAuthor : Bool, linkToYear : Bool, linkToTitle : Bool }
 
 
 view : ViewOptions -> Book -> Html.Html msg
-view { linkToAuthor, linkToYear } book =
+view { linkToAuthor, linkToYear, linkToTitle } book =
     let
-        image =
-            Html.div [ Html.Attributes.class "book-cover" ]
-                (case book.imageUrl of
-                    Just u ->
-                        [ Html.img [ Html.Attributes.attribute "loading" "lazy", Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ book.title ] [] ]
+        titleLink =
+            if linkToTitle then
+                Html.a [ Html.Attributes.href (Route.toString (Route.Bok__Id___Slug_ { id = String.fromInt book.id, slug = book.slug })) ]
 
-                    Nothing ->
-                        [ Html.text "Inget omslag hittades" ]
-                )
+            else
+                List.head >> Maybe.withDefault (Html.text "")
+
+        image =
+            titleLink
+                [ Html.div [ Html.Attributes.class "book-cover" ]
+                    (case book.imageUrl of
+                        Just u ->
+                            [ Html.img [ Html.Attributes.attribute "loading" "lazy", Html.Attributes.src u, Html.Attributes.alt <| "Omslag för " ++ book.title ] [] ]
+
+                        Nothing ->
+                            [ Html.text "Inget omslag hittades" ]
+                    )
+                ]
     in
-    Html.article [ Html.Attributes.class "book-card", Html.Attributes.tabindex 0 ]
+    Html.article [ Html.Attributes.class "book-card" ]
         [ image
         , Html.div [ Html.Attributes.class "book-info" ]
-            [ Html.div [ Html.Attributes.class "book-details" ]
-                [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text book.title ]
+            [ Html.div []
+                [ titleLink [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text book.title ] ]
                 , bookAuthor linkToAuthor book.author
                 ]
             , Html.hr [] []
@@ -129,11 +140,6 @@ view { linkToAuthor, linkToYear } book =
                         Html.text ""
                 ]
             ]
-        , Html.input
-            [ Html.Attributes.type_ "checkbox", Html.Attributes.id <| "show-links-" ++ String.fromInt book.id, Html.Attributes.class "find" ]
-            []
-        , Html.label [ Html.Attributes.class "find", Html.Attributes.for <| "show-links-" ++ String.fromInt book.id ] [ Html.text "Hitta boken!" ]
-        , links book
         ]
 
 
@@ -141,7 +147,7 @@ bookAuthor : Bool -> Author -> Html.Html msg
 bookAuthor linkToAuthor { id, name, slug, lifeSpan } =
     let
         displayName =
-            Html.text <| ([ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " ")
+            Html.text <| ([ Just name, wrapWithParens lifeSpan ] |> List.filterMap identity |> String.join " ")
     in
     if linkToAuthor then
         Html.a [ Html.Attributes.href (Route.toString (Route.Forfattare__Id___Namn_ { id = String.fromInt id, namn = slug })), Html.Attributes.class "book-author" ] [ displayName ]
@@ -150,52 +156,8 @@ bookAuthor linkToAuthor { id, name, slug, lifeSpan } =
         Html.span [] [ displayName ]
 
 
-goodreadsUrl : { r | bookUrl : String } -> String
-goodreadsUrl { bookUrl } =
-    "https://www.goodreads.com" ++ bookUrl
-
-
-librisUrl : Book -> String
-librisUrl { title, author } =
-    "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ title ++ " " ++ author.name ++ "&d=libris&f=simp&spell=true"
-
-
-adlibrisUrl : Book -> String
-adlibrisUrl { title, author } =
-    "https://www.adlibris.com/se/sok?q=" ++ title ++ " " ++ author.name
-
-
-bokusUrl : Book -> String
-bokusUrl { title, author } =
-    "https://www.bokus.com/cgi-bin/product_search.cgi?ac_used=no&search_word=" ++ title ++ " " ++ author.name
-
-
-bokBorsenUrl : Book -> String
-bokBorsenUrl { title, author } =
-    "https://www.bokborsen.se/?q=" ++ title ++ " " ++ author.name
-
-
-links : Book -> Html.Html msg
-links book =
-    let
-        urls =
-            (case book.goodreads of
-                Just r ->
-                    [ ( "Goodreads", goodreadsUrl r ) ]
-
-                Nothing ->
-                    []
-            )
-                ++ [ ( "Libris", librisUrl book ), ( "Bokbörsen", bokBorsenUrl book ), ( "Adlibris", adlibrisUrl book ), ( "Bokus", bokusUrl book ) ]
-    in
-    Html.div [ Html.Attributes.class "links" ]
-        [ Html.ul []
-            (List.map (\( title, url ) -> Html.li [] [ Shared.externalLink [ Html.Attributes.href url ] [ Html.text title ] ]) urls)
-        ]
-
-
-lifeSpanView : Maybe String -> Maybe String
-lifeSpanView =
+wrapWithParens : Maybe String -> Maybe String
+wrapWithParens =
     Maybe.map (\s -> "(" ++ s ++ ")")
 
 

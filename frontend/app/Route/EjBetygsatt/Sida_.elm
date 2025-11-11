@@ -82,13 +82,17 @@ view app shared =
         currentPage =
             String.toInt app.routeParams.sida
                 |> Maybe.withDefault 0
+
+        title =
+            "Visar alla ej betygsatta böcker (Sida " ++ app.routeParams.sida ++ " av " ++ String.fromInt app.data.pages ++ ")"
     in
-    { title = "Visar alla ej betygsatta böcker (Sida " ++ app.routeParams.sida ++ " av " ++ String.fromInt app.data.pages ++ ")"
+    { title = Just title
+    , documentTitle = title
     , body =
         [ Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
-                (List.map (Book.view { linkToAuthor = True, linkToYear = True }) app.data.titles.data)
+                (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = False }) app.data.titles.data)
             ]
         , PageSelector.view currentPage app.data.pages Route.EjBetygsatt__Sida_
         ]

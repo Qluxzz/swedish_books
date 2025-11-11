@@ -67,28 +67,44 @@ test.describe("application", () => {
 
   const expectedLinks = [
     "Goodreads",
+    "StoryGraph",
     "Libris",
     "Bokbörsen",
     "Adlibris",
     "Bokus",
   ]
-  test("Clicking 'Hitta boken!' shows links to find book", async ({ page }) => {
+  test("Clicking on the book goes to book details with links to find book", async ({
+    page,
+  }) => {
     const bookCard = page.locator(".book-card").first()
     await expect(bookCard).toBeVisible()
 
+    const detailsLink = bookCard.getByRole("img", { name: "Omslag för" })
+    await expect(detailsLink).toBeVisible()
+    await detailsLink.click()
+
     for (const link of expectedLinks) {
       await expect(
-        bookCard.getByRole("link", { name: link, exact: true })
-      ).toBeHidden()
+        page.getByRole("link", { name: link, exact: true })
+      ).toBeVisible()
     }
+  })
 
-    const showLinkButton = bookCard.getByText("Hitta boken!")
-    await expect(showLinkButton).toBeVisible()
-    await showLinkButton.click()
+  test("Clicking on the book title to book details with links to find book", async ({
+    page,
+  }) => {
+    const title = "Ingenjör Andrées luftfärd"
+    const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
+    const bookCard = findBook(title, authorAndLifeSpan, page)
+    await expect(bookCard).toBeVisible()
+
+    const detailsLink = bookCard.getByRole("link", { name: title, exact: true })
+    await expect(detailsLink).toBeVisible()
+    await detailsLink.click()
 
     for (const link of expectedLinks) {
       await expect(
-        bookCard.getByRole("link", { name: link, exact: true })
+        page.getByRole("link", { name: link, exact: true })
       ).toBeVisible()
     }
   })

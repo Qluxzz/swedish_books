@@ -13,7 +13,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Build
-      run : npm run build
+      run : npm run build > /dev/null
 
   database-types-test:
     runs-on: ubuntu-latest
