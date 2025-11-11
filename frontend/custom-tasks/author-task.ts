@@ -1,4 +1,3 @@
-import { throwError } from "./utils.ts"
 import { bookBaseQuery, db } from "./db.ts"
 
 async function getAuthors() {
@@ -8,12 +7,11 @@ async function getAuthors() {
 async function getTitlesForAuthor(authorId: string) {
   const authorId_ = Number.parseInt(authorId)
 
-  const authorInfo =
-    (await db
-      .selectFrom("authors")
-      .where("authors.id", "=", authorId_)
-      .select(["authors.name", "authors.life_span"])
-      .executeTakeFirstOrThrow()) ?? throwError("Should be at least one row!")
+  const authorInfo = await db
+    .selectFrom("authors")
+    .where("authors.id", "=", authorId_)
+    .select(["authors.name", "authors.life_span"])
+    .executeTakeFirstOrThrow()
 
   const titles = await bookBaseQuery
     .where("authors.id", "=", authorId_)
