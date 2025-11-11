@@ -162,6 +162,11 @@ label.find {
   }
 }
 
+
+.container:has(.book-details) {
+  max-width: 600px;
+}
+
 .book-details {
   display: flex;
   flex-direction: column;
@@ -171,7 +176,7 @@ label.find {
   .links {
     background-color: oklch(0.22 0.02 55);
     flex-grow: 1;
-    padding: 10px;
+    padding: var(--spacing-4);
     border-radius: 0.25rem;
 
     ul {
@@ -189,14 +194,6 @@ label.find {
 
     h3 {
       font-size: 1.5em;
-    }
-  }
-
-  @media (min-width: 640px) {
-    flex-direction: row;
-
-    .links {
-      max-width: 300px;
     }
   }
 }
