@@ -195,10 +195,6 @@ label.find {
   @media (min-width: 640px) {
     flex-direction: row;
 
-    .book-cover {
-      width: inherit;
-    }
-
     .links {
       max-width: 300px;
     }

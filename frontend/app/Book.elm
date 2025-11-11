@@ -118,7 +118,7 @@ view { linkToAuthor, linkToYear, linkToTitle } book =
     Html.article [ Html.Attributes.class "book-card", Html.Attributes.tabindex 0 ]
         [ image
         , Html.div [ Html.Attributes.class "book-info" ]
-            [ Html.div [ Html.Attributes.class "book-details" ]
+            [ Html.div []
                 [ titleLink [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text book.title ] ]
                 , bookAuthor linkToAuthor book.author
                 ]
