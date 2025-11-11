@@ -8,7 +8,7 @@
     "test": "npx playwright test",
     "fetch": "npx tsx scripts/fetch_books.ts",
     "import": "npx tsx scripts/import.ts",
-    "db:codegen": "export DATABASE_URL='books.db' && npx kysely-codegen --dialect sqlite",
+    "db:codegen": "npx kysely-codegen --dialect sqlite --url books.db --out-file frontend/custom-tasks/db-types.ts",
     "db:verify": "npm run db:codegen -- --verify"
   },
   "devDependencies": {

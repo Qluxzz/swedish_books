@@ -1,6 +1,6 @@
 import { Kysely, SqliteDialect } from "kysely"
-import { DB } from "kysely-codegen"
 import Database from "better-sqlite3"
+import { DB } from "./db-types.ts"
 
 // Opens and reuses a single database connection for the entire application
 export const db = new Kysely<DB>({
