@@ -10,8 +10,8 @@ async function createPaginationResult<DB, T extends keyof DB, O>(
   pageSize: number
 ) {
   const data = await statement
-    .limit(pageSize + 1)
-    .offset((page - 1) * pageSize)
+    .limit(Math.max(0, pageSize + 1))
+    .offset(Math.max(0, page) * pageSize)
     .execute()
 
   return {
