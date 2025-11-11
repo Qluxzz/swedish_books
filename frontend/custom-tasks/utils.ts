@@ -20,4 +20,10 @@ async function createPaginationResult<DB, T extends keyof DB, O>(
   }
 }
 
-export { throwError, createPaginationResult }
+function stringToIntWithError(v: string): number {
+  const parsed = Number.parseInt(v, 10)
+  if (Number.isNaN(parsed)) throwError(`Failed to parse "${v}" to an int!`)
+  return parsed
+}
+
+export { throwError, createPaginationResult, stringToIntWithError }

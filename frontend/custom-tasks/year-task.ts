@@ -1,9 +1,10 @@
 import { db } from "./db.ts"
 import { ratedTitlesQuery } from "./rated-titles-task.ts"
 import { unratedTitlesQuery } from "./unrated-titles-task.ts"
+import { stringToIntWithError } from "./utils.ts"
 
 async function getTitlesForYear(year: string) {
-  const year_ = Number.parseInt(year)
+  const year_ = stringToIntWithError(year)
 
   const [ratedTitles, unratedTitles] = await Promise.all([
     ratedTitlesQuery.where("books.year", "=", year_).execute(),

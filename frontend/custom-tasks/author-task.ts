@@ -1,4 +1,5 @@
 import { bookBaseQuery, db } from "./db.ts"
+import { stringToIntWithError } from "./utils.ts"
 
 async function getAuthors() {
   return await db
@@ -8,7 +9,7 @@ async function getAuthors() {
 }
 
 async function getTitlesForAuthor(authorId: string) {
-  const authorId_ = Number.parseInt(authorId, 10)
+  const authorId_ = stringToIntWithError(authorId)
 
   const titles = await bookBaseQuery
     .where("authors.id", "=", authorId_)
