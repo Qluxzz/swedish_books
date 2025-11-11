@@ -7,19 +7,19 @@ import { unratedTitlesQuery } from "./unrated-titles-task.ts"
 export async function getHomePageData(pageSize: number | null = PAGE_SIZE) {
   pageSize ??= PAGE_SIZE
 
-  const titlesPerYear = await db
-    .selectFrom("books")
-    .groupBy("books.year")
-    .orderBy("books.year", "desc")
-    .select([
-      "books.year",
-      (q) => q.fn.count("books.id").distinct().as("amount"),
-    ])
-    .execute()
-
-  const ratedTitles = await ratedTitlesQuery.limit(pageSize).execute()
-
-  const unratedTitles = await unratedTitlesQuery.limit(pageSize).execute()
+  const [titlesPerYear, ratedTitles, unratedTitles] = await Promise.all([
+    db
+      .selectFrom("books")
+      .groupBy("books.year")
+      .orderBy("books.year", "desc")
+      .select([
+        "books.year",
+        (q) => q.fn.count("books.id").distinct().as("amount"),
+      ])
+      .execute(),
+    ratedTitlesQuery.limit(pageSize).execute(),
+    unratedTitlesQuery.limit(pageSize).execute(),
+  ])
 
   return {
     ratedTitles,

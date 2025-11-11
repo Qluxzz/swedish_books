@@ -10,19 +10,21 @@ async function getAuthors() {
 async function getTitlesForAuthor(authorId: string) {
   const authorId_ = Number.parseInt(authorId, 10)
 
-  const authorInfo = await db
-    .selectFrom("authors")
-    .where("authors.id", "=", authorId_)
-    .select(["authors.name", "authors.life_span"])
-    .executeTakeFirstOrThrow()
-
   const titles = await bookBaseQuery
     .where("authors.id", "=", authorId_)
     .orderBy("books.year", "asc")
     .execute()
 
+  if (titles.length === 0)
+    throw new Error(
+      "There should be no authors without titles in the database! This should be fixed in the import script"
+    )
+
   return {
-    author: authorInfo,
+    author: {
+      name: titles[0].author_name,
+      life_span: titles[0].author_life_span,
+    },
     titles: titles,
   }
 }

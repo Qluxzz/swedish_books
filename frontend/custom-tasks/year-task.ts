@@ -5,13 +5,10 @@ import { unratedTitlesQuery } from "./unrated-titles-task.ts"
 async function getTitlesForYear(year: string) {
   const year_ = Number.parseInt(year)
 
-  const ratedTitles = await ratedTitlesQuery
-    .where("books.year", "=", year_)
-    .execute()
-
-  const unratedTitles = await unratedTitlesQuery
-    .where("books.year", "=", year_)
-    .execute()
+  const [ratedTitles, unratedTitles] = await Promise.all([
+    ratedTitlesQuery.where("books.year", "=", year_).execute(),
+    unratedTitlesQuery.where("books.year", "=", year_).execute(),
+  ])
 
   return { ratedTitles, unratedTitles }
 }
