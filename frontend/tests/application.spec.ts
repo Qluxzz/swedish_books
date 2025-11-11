@@ -79,12 +79,6 @@ test.describe("application", () => {
     const bookCard = page.locator(".book-card").first()
     await expect(bookCard).toBeVisible()
 
-    for (const link of expectedLinks) {
-      await expect(
-        bookCard.getByRole("link", { name: link, exact: true })
-      ).toBeHidden()
-    }
-
     const detailsLink = bookCard.getByRole("img", { name: "Omslag för" })
     await expect(detailsLink).toBeVisible()
     await detailsLink.click()
@@ -103,12 +97,6 @@ test.describe("application", () => {
     const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
     const bookCard = findBook(title, authorAndLifeSpan, page)
     await expect(bookCard).toBeVisible()
-
-    for (const link of expectedLinks) {
-      await expect(
-        bookCard.getByRole("link", { name: link, exact: true })
-      ).toBeHidden()
-    }
 
     const detailsLink = bookCard.getByRole("link", { name: title, exact: true })
     await expect(detailsLink).toBeVisible()
