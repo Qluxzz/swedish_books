@@ -1,11 +1,14 @@
 import { bookBaseQuery, db } from "./db.ts"
 
 async function getAuthors() {
-  return await db.selectFrom("authors").execute()
+  return await db
+    .selectFrom("authors")
+    .select(["authors.id", "authors.slug"])
+    .execute()
 }
 
 async function getTitlesForAuthor(authorId: string) {
-  const authorId_ = Number.parseInt(authorId)
+  const authorId_ = Number.parseInt(authorId, 10)
 
   const authorInfo = await db
     .selectFrom("authors")
