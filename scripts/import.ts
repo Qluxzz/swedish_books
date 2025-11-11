@@ -141,7 +141,7 @@ const JSON_FOLDER = path.resolve(import.meta.dirname, "cache/json")
 const files = readdirSync(JSON_FOLDER, { recursive: true })
 if (files.length === 0) {
   console.error(
-    `Failed to find any json files in ${JSON_FOLDER}. Have you run fetch_original_swedish_books.ts?`
+    `Failed to find any json files in ${JSON_FOLDER}. Have you run "npm run fetch"?`
   )
   exit(1)
 }
@@ -180,8 +180,15 @@ const ignoredAuthors = ["Astrid Lindgren", "Gunilla Bergström", "Åke Holmberg"
 console.time("Import time")
 db.prepare("BEGIN").run()
 for (const file of files) {
+  if (typeof file !== "string") throw new Error("Expected file to be a string!")
+
   if (!file.endsWith(".json")) continue
-  const year = Number.parseInt(file.split(".")[0])
+
+  const yearString = file.split(".")[0]
+  const year = Number.parseInt(yearString)
+  if (Number.isNaN(year))
+    throw new Error(`Failed to parse ${yearString} to a year!`)
+
   const fullPath = `${JSON_FOLDER}/${file}`
   const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
 
