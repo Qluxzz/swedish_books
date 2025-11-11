@@ -26,8 +26,14 @@ async function getRatedTitlesPageCount() {
 // so it stays consistent between executions
 const ratedTitlesQuery = bookBaseQuery
   .where("goodreads.ratings", ">", 0)
-  .orderBy(sql`book_covers.id IS NULL`)
-  .orderBy(sql`(goodreads.avg_rating * goodreads.ratings) DESC`)
-  .orderBy(sql`((books.id * 1103515245 + 12345 + 1337) & 0x7fffffff)`)
+  .orderBy((eb) => eb("book_covers.id", "is", null))
+  .orderBy(
+    (be) =>
+      be(be.ref("goodreads.avg_rating"), "*", be.ref("goodreads.ratings")),
+    "desc"
+  )
+  .orderBy(
+    sql`((${sql.ref("books.id")} * 1103515245 + 12345 + 1337) & 0x7fffffff)`
+  )
 
 export { getRatedTitles, getRatedTitlesPageCount, ratedTitlesQuery }

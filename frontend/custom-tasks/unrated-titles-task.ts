@@ -31,7 +31,9 @@ const unratedTitlesQuery = bookBaseQuery
   .where((eb) =>
     eb.or([eb("goodreads.id", "is", null), eb("goodreads.ratings", "=", 0)])
   )
-  .orderBy(sql`book_covers.id IS NULL`)
-  .orderBy(sql`((books.id * 1103515245 + 12345 + 1337) & 0x7fffffff)`)
+  .orderBy((eb) => eb("book_covers.id", "is", null))
+  .orderBy(
+    sql`((${sql.ref("books.id")} * 1103515245 + 12345 + 1337) & 0x7fffffff)`
+  )
 
 export { getUnratedTitles, getUnratedTitlesPageCount, unratedTitlesQuery }
