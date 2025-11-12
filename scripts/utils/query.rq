@@ -42,7 +42,9 @@ SELECT
   FILTER(?workType IN (:Text, :Work, :TextualWork))
   # Ignore translated works
   FILTER NOT EXISTS { ?work :translationOf [] }
+  # Ignore work if any part is translated, we only want original swedish works
   FILTER NOT EXISTS { ?work :hasPart [ :translationOf [] ] }
+  # Ignore work if any contributor is a translator, since this means the work is translated
   FILTER NOT EXISTS { 
     ?work :contribution [ a :Contribution ; :role ?otherRole ]
     FILTER(?otherRole != <https://id.kb.se/relator/translator>)
