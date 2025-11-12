@@ -103,6 +103,17 @@ function getBookCover(
   }
 }
 
+const pageRegex = new RegExp("(\\d{2,4})")
+function parsePages(pagesString: string): number | null {
+  const match = pagesString.match(pageRegex)
+
+  if (!match?.at(1)) return null
+
+  const parsed = Number.parseInt(match?.[1])
+
+  return Number.isNaN(parsed) ? null : parsed
+}
+
 function authorHasValidLifeSpan(lifeSpan: string): {
   valid: boolean
   alive?: boolean
@@ -199,6 +210,23 @@ for (const file of files) {
     if (!valid || alive) continue
 
     if (ignoredAuthors.includes(book.author)) continue
+
+    const withPages = book.instances.find((x) => x.pages)?.pages
+    if (!withPages) {
+      //console.log(`${book.title} by ${book.author} had no defined pages!`)
+      continue
+    }
+
+    const pages = parsePages(withPages)
+    if (!pages) {
+      console.log(
+        `Failed to parse ${withPages} to number for ${book.title} by ${book.author}!`
+      )
+      continue
+    }
+
+    // Ignore very short works
+    if (pages < 50) continue
 
     insertAuthor.run(
       book.authorId,

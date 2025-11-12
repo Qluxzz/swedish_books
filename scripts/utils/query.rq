@@ -6,12 +6,13 @@ PREFIX country: <https://id.kb.se/country/>
 PREFIX nat: <https://id.kb.se/nationality/>
 
 SELECT
-  ?instance ?work ?bib ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?imageYear ?imageHost ?imageBib ?imageIsbn ?genre
+  ?instance ?work ?bib ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?pages ?imageYear ?imageHost ?imageBib ?imageIsbn ?genre
 {
   ?instance a ?type ;
     :instanceOf ?work ;
     :hasTitle [ :mainTitle ?title ] ;
     :publication [ :year ?year ; :country country:sw ] .
+  OPTIONAL { ?instance :extent [ a :Extent ; :label ?pages ]}
   OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
   OPTIONAL { ?instance :sameAs ?bib }
 
@@ -38,7 +39,9 @@ SELECT
   FILTER(?workType IN (:Text, :Work, :TextualWork))
   # Ignore translated works
   FILTER NOT EXISTS { ?work :translationOf [] }
+  # Ignore work if any part is translated, we only want original swedish works
   FILTER NOT EXISTS { ?work :hasPart [ :translationOf [] ] }
+  # Ignore work if any contributor is a translator, since this means the work is translated
   FILTER NOT EXISTS { 
     ?work :contribution [ a :Contribution ; :role ?otherRole ]
     FILTER(?otherRole != <https://id.kb.se/relator/translator>)
