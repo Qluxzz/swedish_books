@@ -73,10 +73,14 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = Just "Sidor"
-    , documentTitle = "Sidor"
+    let
+        title =
+            "Böcker per sidantal"
+    in
+    { title = title
     , body =
-        [ Html.ul []
+        [ Html.h2 [] [ Html.text title ]
+        , Html.ul []
             (List.map
                 (\( min, max, count ) ->
                     let

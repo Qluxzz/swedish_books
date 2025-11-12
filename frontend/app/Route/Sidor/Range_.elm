@@ -6,9 +6,9 @@ module Route.Sidor.Range_ exposing (Model, Msg, RouteParams, route, Data, Action
 
 -}
 
-import BackendTask exposing (BackendTask)
+import BackendTask
 import BackendTask.Custom
-import Book exposing (Book)
+import Book
 import FatalError
 import Head
 import Html
@@ -17,7 +17,6 @@ import Json.Decode
 import Json.Encode
 import PagesMsg
 import RouteBuilder
-import Serializer.Json.Extra exposing (tupleThree)
 import Shared
 import View
 
@@ -59,7 +58,7 @@ data routeParams =
 
 
 head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag
-head app =
+head _ =
     []
 
 
@@ -67,12 +66,15 @@ view :
     RouteBuilder.App Data ActionData RouteParams
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
-view app shared =
-    { title = Nothing
-    , documentTitle = "Sidor.Range_"
+view app _ =
+    let
+        title =
+            "Böcker på " ++ app.routeParams.range ++ " sidor "
+    in
+    { title = title
     , body =
         [ Html.h1 []
-            [ Html.text <| "Böcker på " ++ app.routeParams.range ++ " sidor " ]
+            [ Html.text title ]
         , Html.section
             []
             [ Html.div
