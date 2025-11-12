@@ -93,7 +93,7 @@ view app _ =
         , Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
-                (List.map (Book.view { linkToAuthor = False, linkToYear = True, linkToTitle = True }) app.data.titles)
+                (List.map Book.defaultView app.data.titles)
             ]
         ]
     }

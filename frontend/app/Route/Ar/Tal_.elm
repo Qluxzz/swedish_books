@@ -77,7 +77,7 @@ view app shared =
     { title = title
     , body =
         Html.h2 [] [ Html.text title ]
-            :: BookList.view { linkToYear = False, linkToAuthor = True, linkToTitle = True } app.data.ratedBooks app.data.unratedBooks
+            :: BookList.view Book.defaultViewOptions app.data.ratedBooks app.data.unratedBooks
     }
 
 

@@ -206,6 +206,7 @@ section {
   gap: 5px;
   flex: 1 1 0px;
   justify-content: end;
+  line-height: 1.2;
 }
 
 .book-title {
@@ -287,5 +288,15 @@ footer {
     font-size: 2rem;
     font-weight: bold;
     text-decoration: none;
+  }
+}
+
+.year-and-pages {
+  display: flex;
+  gap: 10px;
+
+  a {
+    font-family: var(--font-mono);
+    color: var(--color-muted-foreground);
   }
 }
