@@ -38,6 +38,7 @@ const UNWANTED_GENRES = new Set([
   "https://id.kb.se/term/saogf/Filmmanus",
   "https://id.kb.se/term/saogf/L%C3%A4romedel",
   "https://id.kb.se/term/saogf/L%C3%A4ttl%C3%A4st",
+  "https://id.kb.se/term/saogf/Lexikon",
   "https://id.kb.se/term/saogf/Ljudb%C3%B6cker",
   "https://id.kb.se/term/saogf/Ljudbearbetningar",
   "https://id.kb.se/term/saogf/Ordspr%C3%A5k%20och%20tales%C3%A4tt",
