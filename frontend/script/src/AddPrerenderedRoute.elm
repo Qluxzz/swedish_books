@@ -61,7 +61,6 @@ createFile { moduleName } =
                 \{ shared, app } ->
                     Gen.View.make_.view
                         { title = moduleName |> String.join "." |> Elm.string
-                        , documentTitle = moduleName |> String.join "." |> Elm.string
                         , body =
                             Elm.list
                                 [ Html.h2 [] [ Html.text "New Page" ]
