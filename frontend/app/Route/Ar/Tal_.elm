@@ -70,9 +70,13 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = "Böcker för år " ++ app.routeParams.tal
+    let
+        title =
+            "Böcker för år " ++ app.routeParams.tal
+    in
+    { title = title
     , body =
-        Html.h2 [] [ Html.text <| "Böcker för år " ++ app.routeParams.tal ]
+        Html.h2 [] [ Html.text title ]
             :: BookList.view { linkToYear = False, linkToAuthor = True, linkToTitle = True } app.data.ratedBooks app.data.unratedBooks
     }
 
