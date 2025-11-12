@@ -99,9 +99,6 @@ view _ _ _ _ pageView =
                     [ Html.text "Boklåda.se"
                     ]
                 ]
-            , pageView.title
-                |> Maybe.map (\title -> Html.h2 [] [ Html.text title ])
-                |> Maybe.withDefault (Html.text "")
             ]
         , Html.main_ []
             [ Html.div [ Html.Attributes.class "container" ]
@@ -119,5 +116,5 @@ view _ _ _ _ pageView =
             , externalLink [ Html.Attributes.href "https://github.com/Qluxzz/swedish_books" ] [ Html.text "Källkod" ]
             ]
         ]
-    , title = "Boklåda.se | " ++ pageView.documentTitle
+    , title = "Boklåda.se | " ++ pageView.title
     }

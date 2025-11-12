@@ -18,6 +18,7 @@
   --font-mono: "Courier New", Courier, monospace;
 
   /* Spacing */
+  --spacing-2: 0.5rem;
   --spacing-4: 1rem;
   --spacing-6: 1.5rem;
   --spacing-8: 2rem;
@@ -51,21 +52,13 @@ main {
 
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-12);
+  gap: var(--spacing-4);
 }
 
 /* Header */
 header {
   background-color: var(--color-muted);
-  padding: var(--spacing-4);
-
-  h1 {
-    font-family: var(--font-serif);
-    font-weight: bold;
-    color: var(--color-foreground);
-    text-wrap: balance;
-    line-height: 1;
-  }
+  padding: var(--spacing-2) var(--spacing-4);
 
   h2 {
     margin-top: 15px;
@@ -73,8 +66,21 @@ header {
   }
 }
 
+.container>h2 {
+  font-family: var(--font-serif);
+  font-weight: bold;
+  color: var(--color-foreground);
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
 /* Section */
 section {
+
+  &:not(:first-of-type) {
+    margin-top: var(--spacing-8);
+  }
+
   h2 {
     font-family: var(--font-serif);
     font-weight: bold;

@@ -87,10 +87,10 @@ view app _ =
         title =
             [ Just app.data.author.name, Book.wrapWithParens app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " "
     in
-    { title = Just title
-    , documentTitle = title
+    { title = title
     , body =
-        [ Html.section []
+        [ Html.h2 [] [ Html.text title ]
+        , Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
                 (List.map (Book.view { linkToAuthor = False, linkToYear = True, linkToTitle = True }) app.data.titles)

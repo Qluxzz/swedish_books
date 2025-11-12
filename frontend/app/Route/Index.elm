@@ -75,8 +75,9 @@ data =
         |> BackendTask.allowFatal
 
 
+title : String
 title =
-    "Mindre kända svenska originalverk"
+    "Hitta svenska skönlitterära originalverk som du kanske inte känner till"
 
 
 head :
@@ -92,7 +93,7 @@ head _ =
             , dimensions = Nothing
             , mimeType = Nothing
             }
-        , description = "Hitta svenska skönlitterära originalverk som du kanske inte känner till"
+        , description = title
         , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
         , title = title
         }
@@ -104,10 +105,10 @@ view :
     -> Shared.Model
     -> View (PagesMsg Msg)
 view app _ =
-    { title = Just title
-    , documentTitle = title
+    { title = title
     , body =
-        [ Section.ratedBooks
+        [ Html.h2 [] [ Html.text title ]
+        , Section.ratedBooks
             [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.ratedBooks)
             , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.Betygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla betygsatta böcker" ] ]
             ]

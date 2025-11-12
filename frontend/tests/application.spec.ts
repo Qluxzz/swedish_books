@@ -19,26 +19,26 @@ test.describe("application", () => {
     await page
       .getByRole("heading", {
         level: 2,
-        name: "Mindre kända svenska originalverk",
+        name: "Hitta svenska skönlitterära originalverk som du kanske inte känner till",
       })
       .waitFor({ state: "visible" })
   })
 
   test("Has expected sections", async ({ page }) => {
     await expect(
-      page.locator("section:first-child", {
+      page.locator("section:first-of-type", {
         has: page.getByRole("heading", { level: 2, name: "Betygsatta böcker" }),
       })
     ).toBeVisible()
 
     await expect(
-      page.locator("section:nth-child(2)", {
+      page.locator("section:nth-of-type(2)", {
         has: page.getByRole("heading", { level: 2, name: "Mysterierna" }),
       })
     ).toBeVisible()
 
     await expect(
-      page.locator("section:last-child", {
+      page.locator("section:last-of-type", {
         has: page.getByRole("heading", {
           level: 2,
           name: "Hitta titlar per år",

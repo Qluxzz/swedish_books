@@ -73,8 +73,7 @@ view error model =
                 ]
             ]
         ]
-    , title = Just title
-    , documentTitle = title
+    , title = title
     }
 
 

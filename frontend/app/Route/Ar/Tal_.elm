@@ -12,6 +12,7 @@ import Book
 import BookList
 import FatalError
 import Head
+import Html
 import Json.Decode
 import Json.Encode
 import PagesMsg
@@ -69,10 +70,14 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = Just <| "Böcker för år " ++ app.routeParams.tal
-    , documentTitle = "Böcker för år " ++ app.routeParams.tal
+    let
+        title =
+            "Böcker för år " ++ app.routeParams.tal
+    in
+    { title = title
     , body =
-        BookList.view { linkToYear = False, linkToAuthor = True, linkToTitle = True } app.data.ratedBooks app.data.unratedBooks
+        Html.h2 [] [ Html.text title ]
+            :: BookList.view { linkToYear = False, linkToAuthor = True, linkToTitle = True } app.data.ratedBooks app.data.unratedBooks
     }
 
 

@@ -67,8 +67,7 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared =
-    { title = Nothing
-    , documentTitle = app.data.title ++ " (" ++ String.fromInt app.data.year ++ ") av " ++ ([ Just app.data.author.name, Maybe.map (\s -> "(" ++ s ++ ")") app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " ")
+    { title = app.data.title ++ " (" ++ String.fromInt app.data.year ++ ") av " ++ ([ Just app.data.author.name, Maybe.map (\s -> "(" ++ s ++ ")") app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " ")
     , body =
         [ Html.div [ Html.Attributes.class "book-details" ]
             [ Book.view { linkToAuthor = False, linkToYear = False, linkToTitle = False } app.data
