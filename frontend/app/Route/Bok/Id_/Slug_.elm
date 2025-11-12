@@ -70,7 +70,7 @@ view app shared =
     { title = app.data.title ++ " (" ++ String.fromInt app.data.year ++ ") av " ++ ([ Just app.data.author.name, Maybe.map (\s -> "(" ++ s ++ ")") app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " ")
     , body =
         [ Html.div [ Html.Attributes.class "book-details" ]
-            [ Book.view { linkToAuthor = False, linkToYear = False, linkToTitle = False, showPageCount = True } app.data
+            [ Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = False, showPageCount = True } app.data
             , links app.data
             ]
         ]

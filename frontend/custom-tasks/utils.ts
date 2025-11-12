@@ -9,14 +9,21 @@ async function createPaginationResult<DB, T extends keyof DB, O>(
   page: number,
   pageSize: number
 ) {
-  const data = await statement
-    .limit(Math.max(0, pageSize + 1))
-    .offset(Math.max(0, page) * pageSize)
-    .execute()
+  const [{ total }, data] = await Promise.all([
+    statement
+      .clearSelect()
+      .select((x) => x.fn.countAll<number>().as("total"))
+      .executeTakeFirstOrThrow(),
+
+    statement
+      .limit(Math.max(0, pageSize))
+      .offset(Math.max(0, page) * pageSize)
+      .execute(),
+  ])
 
   return {
-    data: data.slice(0, pageSize),
-    hasMore: data.length > pageSize,
+    data: data,
+    pages: Math.ceil(total / pageSize),
   }
 }
 

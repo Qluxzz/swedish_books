@@ -142,7 +142,7 @@ view { linkToAuthor, linkToYear, linkToTitle, showPageCount } book =
                 [ Html.div [ Html.Attributes.class "year-and-pages" ]
                     (yearView book.year linkToYear
                         :: (if showPageCount then
-                                [ Html.a [ Html.Attributes.href ("/sidor/" ++ pageCountPage book.pages) ] [ Html.span [] [ Html.text <| String.fromInt book.pages ++ " sidor" ] ] ]
+                                [ Html.a [ Html.Attributes.href (Route.toString (Route.Sidor__Range___Page_ { range = pageCountPage book.pages, page = "1" })) ] [ Html.span [] [ Html.text <| String.fromInt book.pages ++ " sidor" ] ] ]
 
                             else
                                 []
