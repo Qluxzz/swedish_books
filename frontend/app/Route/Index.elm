@@ -109,11 +109,11 @@ view app _ =
     , body =
         [ Html.h2 [] [ Html.text title ]
         , Section.ratedBooks
-            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.ratedBooks)
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.defaultView app.data.ratedBooks)
             , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.Betygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla betygsatta böcker" ] ]
             ]
         , Section.unratedBooks
-            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.unratedBooks)
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map Book.defaultView app.data.unratedBooks)
             , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.EjBetygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla ej betygsatta böcker" ] ]
             ]
         , Section.default "Hitta titlar per år" "" [ titlesPerYearView app.data.titlesPerYear Nothing ]

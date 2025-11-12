@@ -1,4 +1,4 @@
-module Book exposing (Book, Goodreads, ViewOptions, decode, toImageUrl, view, wrapWithParens)
+module Book exposing (Book, Goodreads, ViewOptions, decode, defaultView, defaultViewOptions, toImageUrl, view, wrapWithParens)
 
 import Dict
 import Head.Seo exposing (book)
@@ -93,11 +93,25 @@ decode =
 
 
 type alias ViewOptions =
-    { linkToAuthor : Bool, linkToYear : Bool, linkToTitle : Bool }
+    { linkToAuthor : Bool, linkToYear : Bool, linkToTitle : Bool, showPageCount : Bool }
+
+
+defaultViewOptions : ViewOptions
+defaultViewOptions =
+    { linkToAuthor = True
+    , linkToYear = True
+    , linkToTitle = True
+    , showPageCount = False
+    }
+
+
+defaultView : Book -> Html.Html msg
+defaultView =
+    view defaultViewOptions
 
 
 view : ViewOptions -> Book -> Html.Html msg
-view { linkToAuthor, linkToYear, linkToTitle } book =
+view { linkToAuthor, linkToYear, linkToTitle, showPageCount } book =
     let
         titleLink =
             if linkToTitle then
@@ -123,10 +137,17 @@ view { linkToAuthor, linkToYear, linkToTitle } book =
         , Html.div [ Html.Attributes.class "book-info" ]
             [ titleLink [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text book.title ] ]
             , bookAuthor linkToAuthor book.author
-            , Html.span [] [ Html.text <| String.fromInt book.pages ++ " sidor" ]
             , Html.hr [] []
             , Html.div [ Html.Attributes.class "book-meta" ]
-                [ yearView book.year linkToYear
+                [ Html.div [ Html.Attributes.class "year-and-pages" ]
+                    (yearView book.year linkToYear
+                        :: (if showPageCount then
+                                [ Html.a [ Html.Attributes.href ("/sidor/" ++ pageCountPage book.pages) ] [ Html.span [] [ Html.text <| String.fromInt book.pages ++ " sidor" ] ] ]
+
+                            else
+                                []
+                           )
+                    )
                 , case book.goodreads of
                     Just r ->
                         if r.ratings > 0 then
@@ -174,3 +195,15 @@ yearView year createLink =
 
     else
         y
+
+
+pageCountPage : Int -> String
+pageCountPage pages =
+    let
+        from =
+            Basics.floor (Basics.toFloat pages / 100) * 100
+
+        to =
+            Basics.ceiling (Basics.toFloat pages / 100) * 100 - 1
+    in
+    String.fromInt from ++ "-" ++ String.fromInt to
