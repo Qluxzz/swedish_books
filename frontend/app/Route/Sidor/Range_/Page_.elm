@@ -1,4 +1,4 @@
-module Route.Sidor.Range_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
+module Route.Sidor.Range_.Page_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
 {-|
 
@@ -15,7 +15,10 @@ import Html
 import Html.Attributes
 import Json.Decode
 import Json.Encode
+import PageSelector
 import PagesMsg
+import PaginationResult
+import Route
 import RouteBuilder
 import Shared
 import View
@@ -30,7 +33,7 @@ type alias Msg =
 
 
 type alias RouteParams =
-    { range : String }
+    { range : String, page : String }
 
 
 route : RouteBuilder.StatelessRoute RouteParams Data ActionData
@@ -42,7 +45,7 @@ route =
 
 
 type alias Data =
-    List Book.Book
+    PaginationResult.Model Book.Book
 
 
 type alias ActionData =
@@ -52,8 +55,8 @@ type alias ActionData =
 data : RouteParams -> BackendTask.BackendTask FatalError.FatalError Data
 data routeParams =
     BackendTask.Custom.run "getBooksForPageRange"
-        (Json.Encode.string routeParams.range)
-        (Json.Decode.list Book.decode)
+        (Json.Encode.object [ ( "range", Json.Encode.string routeParams.range ), ( "page", Json.Encode.string routeParams.page ) ])
+        (PaginationResult.decode Book.decode)
         |> BackendTask.allowFatal
 
 
@@ -69,18 +72,21 @@ view :
 view app _ =
     let
         title =
-            "Böcker på " ++ app.routeParams.range ++ " sidor "
+            "Böcker på " ++ app.routeParams.range ++ " sidor (Sida " ++ app.routeParams.page ++ " av " ++ String.fromInt app.data.pages ++ ")"
+
+        currentPage =
+            String.toInt app.routeParams.page |> Maybe.withDefault 0
     in
     { title = title
     , body =
-        [ Html.h1 []
+        [ Html.h2 []
             [ Html.text title ]
-        , Html.section
-            []
+        , Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
-                (List.map Book.defaultView app.data)
+                (List.map Book.defaultView app.data.data)
             ]
+        , PageSelector.view currentPage app.data.pages (\page -> Route.Sidor__Range___Page_ { range = app.routeParams.range, page = page })
         ]
     }
 
@@ -90,10 +96,12 @@ pages =
     BackendTask.Custom.run "getPageRanges"
         Json.Encode.null
         (Json.Decode.list
-            (Json.Decode.map3 (\min max _ -> { range = String.fromInt min ++ "-" ++ String.fromInt max })
+            (Json.Decode.map4 (\min max _ p -> List.range 1 p |> List.map (\page -> { range = String.fromInt min ++ "-" ++ String.fromInt max, page = String.fromInt page }))
                 (Json.Decode.index 0 Json.Decode.int)
                 (Json.Decode.index 1 Json.Decode.int)
                 (Json.Decode.index 2 Json.Decode.int)
+                (Json.Decode.index 3 Json.Decode.int)
             )
+            |> Json.Decode.map List.concat
         )
         |> BackendTask.allowFatal

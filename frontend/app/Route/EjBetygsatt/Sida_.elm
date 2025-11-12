@@ -47,7 +47,7 @@ route =
 
 
 type alias Data =
-    { titles : PaginationResult.Model Book.Book, pages : Int }
+    PaginationResult.Model Book.Book
 
 
 type alias ActionData =
@@ -56,15 +56,9 @@ type alias ActionData =
 
 data : RouteParams -> BackendTask.BackendTask FatalError.FatalError Data
 data routeParams =
-    BackendTask.map2 Data
-        (BackendTask.Custom.run "getUnratedTitles"
-            (Json.Encode.int (String.toInt routeParams.sida |> Maybe.withDefault 0))
-            (PaginationResult.decode Book.decode)
-        )
-        (BackendTask.Custom.run "getUnratedTitlesPageCount"
-            Json.Encode.null
-            Json.Decode.int
-        )
+    BackendTask.Custom.run "getUnratedTitles"
+        (Json.Encode.int (String.toInt routeParams.sida |> Maybe.withDefault 0))
+        (PaginationResult.decode Book.decode)
         |> BackendTask.allowFatal
 
 
@@ -92,9 +86,9 @@ view app shared =
         , Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
-                (List.map Book.defaultView app.data.titles.data)
+                (List.map Book.defaultView app.data.data)
             ]
-        , PageSelector.view currentPage app.data.pages Route.EjBetygsatt__Sida_
+        , PageSelector.view currentPage app.data.pages (\page -> Route.EjBetygsatt__Sida_ { sida = page })
         ]
     }
 

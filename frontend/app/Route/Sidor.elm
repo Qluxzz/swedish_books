@@ -42,7 +42,7 @@ route =
 
 
 type alias Data =
-    List ( Int, Int, Int )
+    List { min : Int, max : Int, count : Int }
 
 
 type alias ActionData =
@@ -54,7 +54,7 @@ data =
     BackendTask.Custom.run "getPageRanges"
         Json.Encode.null
         (Json.Decode.list
-            (Json.Decode.map3 (\min max count -> ( min, max, count ))
+            (Json.Decode.map3 (\min max count -> { min = min, max = max, count = count })
                 (Json.Decode.index 0 Json.Decode.int)
                 (Json.Decode.index 1 Json.Decode.int)
                 (Json.Decode.index 2 Json.Decode.int)
@@ -80,20 +80,22 @@ view app shared =
     { title = title
     , body =
         [ Html.h2 [] [ Html.text title ]
-        , Html.ul []
-            (List.map
-                (\( min, max, count ) ->
-                    let
-                        range =
-                            String.fromInt min ++ "-" ++ String.fromInt max
-                    in
-                    Html.li []
-                        [ Html.a [ Html.Attributes.href (Route.toString <| Route.Sidor__Range_ { range = range }) ]
-                            [ Html.text <| range ++ " sidor (" ++ String.fromInt count ++ ")"
+        , Html.section []
+            [ Html.ul []
+                (List.map
+                    (\{ min, max, count } ->
+                        let
+                            range =
+                                String.fromInt min ++ "-" ++ String.fromInt max
+                        in
+                        Html.li []
+                            [ Html.a [ Html.Attributes.href (Route.toString <| Route.Sidor__Range___Page_ { range = range, page = "1" }) ]
+                                [ Html.text <| range ++ " sidor (" ++ String.fromInt count ++ " böcker)"
+                                ]
                             ]
-                        ]
+                    )
+                    app.data
                 )
-                app.data
-            )
+            ]
         ]
     }
