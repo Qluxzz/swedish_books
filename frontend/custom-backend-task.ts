@@ -16,6 +16,12 @@ import { getHomePageData } from "./custom-tasks/home-page-task.ts"
 
 import { getAllBookUrls, getBookById } from "./custom-tasks/book-task.ts"
 
+import {
+  getBooksForPageRange,
+  getPageRanges,
+} from "./custom-tasks/pages-task.ts"
+
+export { getPageRanges, getBooksForPageRange }
 export { getAllBookUrls, getBookById }
 export { getAuthors, getTitlesForAuthor }
 export { getAvailableYears, getTitlesForYear }

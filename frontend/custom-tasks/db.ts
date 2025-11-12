@@ -10,7 +10,7 @@ export const db = new Kysely<DB>({
   log: ["error"], // Add "query" to log all queries
 })
 
-export const bookBaseQuery = db
+export const queryBooks = db
   .selectFrom("books")
   .innerJoin("authors", "authors.id", "books.author_id")
   .leftJoin("goodreads", "goodreads.book_id", "books.id")
