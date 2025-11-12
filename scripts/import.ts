@@ -30,6 +30,7 @@ CREATE TABLE books (
   slug TEXT NOT NULL,
   author_id INTEGER NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
+  pages INTEGER NOT NULL,
   instances INTEGER NOT NULL DEFAULT 1,
   UNIQUE (slug, author_id)
 );
@@ -169,8 +170,8 @@ const insertAuthor = db.prepare(
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
 const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year, slug)
-  VALUES (?, ?, ?, ?)
+  INSERT INTO books(title, author_id, year, pages, slug)
+  VALUES (?, ?, ?, ?, ?)
   ON CONFLICT(author_id, slug)
   DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
   RETURNING id
@@ -239,8 +240,8 @@ for (const file of files) {
       throwError(`Failed to get author id for ${book.author}`)
 
     const bookId =
-      insertBook.get(book.title, authorId, year, getSlug(book.title))?.id ??
-      throwError(`Failed to get book id for ${book.title}`)
+      insertBook.get(book.title, authorId, year, pages, getSlug(book.title))
+        ?.id ?? throwError(`Failed to get book id for ${book.title}`)
 
     // We want to get the cover of the oldest release
     const oldestToNewest = book.images.toSorted((a, b) =>

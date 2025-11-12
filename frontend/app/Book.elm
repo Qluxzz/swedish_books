@@ -12,6 +12,7 @@ import Serializer.Json.Extra
 type alias Book =
     { id : Int
     , slug : String
+    , pages : Int
     , title : String
     , author : Author
     , year : Int
@@ -58,9 +59,10 @@ toImageUrl host id =
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\id slug title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
+        (\id slug pages title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
             { id = id
             , slug = slug
+            , pages = pages
             , title = title
             , author = { id = authorId, name = authorName, slug = authorSlug, lifeSpan = lifeSpan }
             , year = year
@@ -76,6 +78,7 @@ decode =
         )
         |> Serializer.Json.Extra.andMap (Json.Decode.field "id" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "slug" Json.Decode.string)
+        |> Serializer.Json.Extra.andMap (Json.Decode.field "pages" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "title" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_id" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_name" Json.Decode.string)
@@ -118,10 +121,9 @@ view { linkToAuthor, linkToYear, linkToTitle } book =
     Html.article [ Html.Attributes.class "book-card" ]
         [ image
         , Html.div [ Html.Attributes.class "book-info" ]
-            [ Html.div []
-                [ titleLink [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text book.title ] ]
-                , bookAuthor linkToAuthor book.author
-                ]
+            [ titleLink [ Html.h3 [ Html.Attributes.class "book-title" ] [ Html.text book.title ] ]
+            , bookAuthor linkToAuthor book.author
+            , Html.span [] [ Html.text <| String.fromInt book.pages ++ " sidor" ]
             , Html.hr [] []
             , Html.div [ Html.Attributes.class "book-meta" ]
                 [ yearView book.year linkToYear
