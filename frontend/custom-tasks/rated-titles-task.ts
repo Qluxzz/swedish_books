@@ -1,6 +1,6 @@
 import { sql } from "kysely"
 import { PAGE_SIZE } from "./consts.ts"
-import { bookBaseQuery } from "./db.ts"
+import { queryBooks } from "./db.ts"
 import { createPaginationResult } from "./utils.ts"
 
 async function getRatedTitles(page: number) {
@@ -24,7 +24,7 @@ async function getRatedTitlesPageCount() {
 // Then sorted by rating
 // and then randomly using a fixed seed,
 // so it stays consistent between executions
-const ratedTitlesQuery = bookBaseQuery
+const ratedTitlesQuery = queryBooks
   .where("goodreads.ratings", ">", 0)
   .orderBy((eb) => eb("book_covers.id", "is", null))
   .orderBy(

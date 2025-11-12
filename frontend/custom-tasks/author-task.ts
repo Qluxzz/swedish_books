@@ -1,4 +1,4 @@
-import { bookBaseQuery, db } from "./db.ts"
+import { queryBooks, db } from "./db.ts"
 import { stringToIntWithError } from "./utils.ts"
 
 async function getAuthors() {
@@ -11,7 +11,7 @@ async function getAuthors() {
 async function getTitlesForAuthor(authorId: string) {
   const authorId_ = stringToIntWithError(authorId)
 
-  const titles = await bookBaseQuery
+  const titles = await queryBooks
     .where("authors.id", "=", authorId_)
     .orderBy("books.year", "asc")
     .execute()

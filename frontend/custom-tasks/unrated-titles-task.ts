@@ -1,15 +1,13 @@
 import { sql } from "kysely"
 import { PAGE_SIZE } from "./consts.ts"
-import { bookBaseQuery, db } from "./db.ts"
+import { queryBooks } from "./db.ts"
 import { createPaginationResult } from "./utils.ts"
 
 async function getUnratedTitlesPageCount() {
   const result = await unratedTitlesQuery
-    .select((f) => f.fn.countAll().as("count"))
+    .clearSelect()
+    .select((f) => f.fn.countAll<number>().as("count"))
     .executeTakeFirstOrThrow()
-
-  if (typeof result?.count !== "number")
-    throw new Error("Count was not a number!")
 
   return Math.ceil(result.count / PAGE_SIZE) - 2 // The first page is the home page
 }
@@ -27,7 +25,7 @@ async function getUnratedTitles(page: number) {
 // Sorted by the titles with covers first,
 // and then randomly using a fixed seed,
 // so it stays consistent between executions
-const unratedTitlesQuery = bookBaseQuery
+const unratedTitlesQuery = queryBooks
   .where((eb) =>
     eb.or([eb("goodreads.id", "is", null), eb("goodreads.ratings", "=", 0)])
   )
