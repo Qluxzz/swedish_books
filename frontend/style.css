@@ -71,6 +71,7 @@ header {
   font-weight: bold;
   color: var(--color-foreground);
   font-size: 2rem;
+  line-height: 1.2;
 }
 
 /* Section */

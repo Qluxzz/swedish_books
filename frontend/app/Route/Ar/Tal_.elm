@@ -72,7 +72,7 @@ view :
 view app shared =
     { title = "Böcker för år " ++ app.routeParams.tal
     , body =
-        Html.h1 [] [ Html.text <| "Böcker för år " ++ app.routeParams.tal ]
+        Html.h2 [] [ Html.text <| "Böcker för år " ++ app.routeParams.tal ]
             :: BookList.view { linkToYear = False, linkToAuthor = True, linkToTitle = True } app.data.ratedBooks app.data.unratedBooks
     }
 
