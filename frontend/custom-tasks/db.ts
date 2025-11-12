@@ -19,6 +19,7 @@ export const bookBaseQuery = db
     "books.id",
     "books.title",
     "books.slug",
+    "books.pages",
     "authors.id as author_id",
     "authors.name as author_name",
     "authors.life_span as author_life_span",
