@@ -27,6 +27,18 @@ jobs:
     - name: Build
       run : npm run db:verify
 
+  elm-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Build
+      run : npm run test --fuzz 10000
+
   type-check-test:
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +64,7 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
-      run: npx playwright test
+      run: npm run e2e
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
