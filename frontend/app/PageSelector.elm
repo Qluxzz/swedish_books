@@ -11,18 +11,7 @@ view : Int -> Int -> (String -> Route.Route) -> Html.Html msg
 view currentPage amountOfPages baseUrl =
     let
         range =
-            if amountOfPages == 1 then
-                [ currentPage ]
-
-            else
-                let
-                    from =
-                        Basics.max 2 (currentPage - 2)
-
-                    to =
-                        Basics.min (amountOfPages - 1) (currentPage + 2)
-                in
-                (1 :: List.range from to) ++ [ amountOfPages ]
+            pagebuttons currentPage amountOfPages
     in
     Html.div [ Html.Attributes.class "page-selector" ]
         (range
@@ -37,3 +26,19 @@ view currentPage amountOfPages baseUrl =
                             [ Html.text <| String.fromInt page ]
                 )
         )
+
+
+pagebuttons : Int -> Int -> List Int
+pagebuttons currentPage amountOfPages =
+    if amountOfPages == 1 then
+        [ currentPage ]
+
+    else
+        let
+            from =
+                Basics.max 2 (currentPage - 2)
+
+            to =
+                Basics.min (amountOfPages - 1) (currentPage + 2)
+        in
+        (1 :: List.range from to) ++ [ amountOfPages ]
