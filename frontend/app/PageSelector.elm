@@ -5,7 +5,7 @@ import Html.Attributes
 import Route
 
 
-{-| Shows a page selector with links for [first page, two lower than current, current, two higher than current, last]
+{-| Shows a page selector with links to other pages if the exist
 -}
 view : Int -> Int -> (String -> Route.Route) -> Html.Html msg
 view currentPage amountOfPages baseUrl =
