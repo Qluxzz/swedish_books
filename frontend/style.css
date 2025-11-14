@@ -261,6 +261,17 @@ section {
   line-height: 1;
 }
 
+a:has(.page-group) {
+  text-decoration: none;
+}
+
+.page-group {
+  font-size: 2rem;
+  background-color: var(--color-muted);
+  padding: var(--spacing-4);
+
+}
+
 /* Footer */
 footer {
   padding: var(--spacing-8);

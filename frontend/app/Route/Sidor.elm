@@ -80,19 +80,22 @@ view app shared =
     { title = title
     , body =
         [ Html.h2 [] [ Html.text title ]
-        , Html.section []
-            [ Html.ul []
-                (List.map
-                    (\{ min, max, count } ->
-                        let
-                            range =
-                                String.fromInt min ++ "-" ++ String.fromInt max
-                        in
-                        Html.li []
-                            [ Html.a [ Html.Attributes.href (Route.toString <| Route.Sidor__Range___Page_ { range = range, page = "1" }) ]
+        , Html.section [ Html.Attributes.class "book-grid" ]
+            (List.map
+                (\{ min, max, count } ->
+                    let
+                        range =
+                            String.fromInt min ++ "-" ++ String.fromInt max
+                    in
+                    Html.a [ Html.Attributes.href (Route.toString <| Route.Sidor__Range___Page_ { range = range, page = "1" }) ]
+                        [ Html.div [ Html.Attributes.class "page-group" ]
+                            [ Html.text <|
+                                range
+                                    ++ " sidor"
+                            , Html.br [] []
+                            , Html.span []
                                 [ Html.text <|
-                                    range
-                                        ++ " sidor ("
+                                    "("
                                         ++ String.fromInt count
                                         ++ " "
                                         ++ (if count == 1 then
@@ -104,9 +107,9 @@ view app shared =
                                         ++ ")"
                                 ]
                             ]
-                    )
-                    app.data
+                        ]
                 )
-            ]
+                app.data
+            )
         ]
     }
