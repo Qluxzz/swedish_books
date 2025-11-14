@@ -80,7 +80,7 @@ view app _ =
     { title = title
     , body =
         [ Html.h2 []
-            [ Html.text title ]
+            [ Html.text "Böcker på ", Html.a [ Html.Attributes.href (Route.toString Route.Sidor) ] [ Html.text <| app.routeParams.range ++ " sidor" ], Html.text <| " (Sida " ++ app.routeParams.page ++ " av " ++ String.fromInt app.data.pages ++ ")" ]
         , Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
