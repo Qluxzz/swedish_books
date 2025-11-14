@@ -90,7 +90,18 @@ view app shared =
                         in
                         Html.li []
                             [ Html.a [ Html.Attributes.href (Route.toString <| Route.Sidor__Range___Page_ { range = range, page = "1" }) ]
-                                [ Html.text <| range ++ " sidor (" ++ String.fromInt count ++ " böcker)"
+                                [ Html.text <|
+                                    range
+                                        ++ " sidor ("
+                                        ++ String.fromInt count
+                                        ++ " "
+                                        ++ (if count == 1 then
+                                                "bok"
+
+                                            else
+                                                "böcker"
+                                           )
+                                        ++ ")"
                                 ]
                             ]
                     )
