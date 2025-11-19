@@ -27,6 +27,18 @@ jobs:
     - name: Build
       run : npm run db:verify
 
+  type-check-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Build
+      run: npx tsc
+
   playwright-test:
     timeout-minutes: 60
     runs-on: ubuntu-latest

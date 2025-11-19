@@ -4,7 +4,7 @@
 
 import { readdirSync, readFileSync, existsSync, unlinkSync } from "node:fs"
 import { DatabaseSync } from "node:sqlite"
-import { Image, Release } from "./utils/release.ts"
+import { Image, Instance, Release } from "./utils/release.ts"
 import { getIdentifier, throwError } from "./utils/helpers.ts"
 import path from "node:path"
 import getSlug from "./utils/slug.ts"
@@ -30,6 +30,7 @@ CREATE TABLE books (
   slug TEXT NOT NULL,
   author_id INTEGER NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
+  pages INTEGER NOT NULL,
   instances INTEGER NOT NULL DEFAULT 1,
   UNIQUE (slug, author_id)
 );
@@ -48,7 +49,6 @@ CREATE TABLE book_covers (
 CREATE TABLE goodreads (
   id INTEGER PRIMARY KEY,
   book_id INTEGER REFERENCES books(id) ON DELETE CASCADE UNIQUE,
-  pages INTEGER,
   avg_rating INTEGER NOT NULL,
   ratings INTEGER NOT NULL,
   book_url TEXT NOT NULL
@@ -101,6 +101,35 @@ function getBookCover(
     default:
       throw new Error(`Unknown image host: ${host}. ${JSON.stringify(book)}`)
   }
+}
+
+const pageRegex = new RegExp(/((\d{2,4})|(\d|)\]? (s\.|sidor))/)
+function parsePageCount(pagesString: string): number | null {
+  const match = pagesString.match(pageRegex)
+
+  if (!match?.at(1)) return null
+
+  const parsed = Number.parseInt(match?.[1])
+
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function getPageCountFromInstances(instances: Instance[]): number | null {
+  if (instances.length === 0) return null
+
+  for (const instance of instances) {
+    if (instance.pages) {
+      const pageCount = parsePageCount(instance.pages)
+      if (pageCount) return pageCount
+      else if (!instance.pages.includes("vol")) {
+        console.log(
+          `${instance.id} had an invalid page count ${instance.pages}`
+        )
+      }
+    }
+  }
+
+  return null
 }
 
 function authorHasValidLifeSpan(lifeSpan: string): {
@@ -158,15 +187,15 @@ const insertAuthor = db.prepare(
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
 const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year, slug)
-  VALUES (?, ?, ?, ?)
+  INSERT INTO books(title, author_id, year, pages, slug)
+  VALUES (?, ?, ?, ?, ?)
   ON CONFLICT(author_id, slug)
   DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
   RETURNING id
 `)
 
 const insertGoodreadsData = db.prepare(
-  "INSERT OR IGNORE INTO goodreads(book_id, pages, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?, ?)"
+  "INSERT OR IGNORE INTO goodreads(book_id, avg_rating, ratings, book_url) VALUES (?, ?, ?, ?)"
 )
 
 const insertBookCoverImage = db.prepare(
@@ -200,6 +229,16 @@ for (const file of files) {
 
     if (ignoredAuthors.includes(book.author)) continue
 
+    const pageCount =
+      getPageCountFromInstances(book.instances) ?? book.goodreads?.numPages
+
+    if (!pageCount) {
+      continue
+    }
+
+    // Ignore very short works
+    if (pageCount < 50) continue
+
     insertAuthor.run(
       book.authorId,
       book.author,
@@ -211,8 +250,8 @@ for (const file of files) {
       throwError(`Failed to get author id for ${book.author}`)
 
     const bookId =
-      insertBook.get(book.title, authorId, year, getSlug(book.title))?.id ??
-      throwError(`Failed to get book id for ${book.title}`)
+      insertBook.get(book.title, authorId, year, pageCount, getSlug(book.title))
+        ?.id ?? throwError(`Failed to get book id for ${book.title}`)
 
     // We want to get the cover of the oldest release
     const oldestToNewest = book.images.toSorted((a, b) =>
@@ -232,7 +271,6 @@ for (const file of files) {
     if (book.goodreads) {
       insertGoodreadsData.run(
         bookId,
-        book.goodreads.numPages,
         book.goodreads.avgRating,
         book.goodreads.ratingsCount,
         book.goodreads.bookUrl

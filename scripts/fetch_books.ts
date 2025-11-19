@@ -97,6 +97,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
               id: x.instance.value,
               bib: x.bib?.value,
               isbn: x.isbn?.value,
+              pages: x.otherInstancePages?.value,
             })
 
           if (
@@ -143,6 +144,7 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
                 id: x.instance.value,
                 bib: x.bib?.value,
                 isbn: x.isbn?.value,
+                pages: x.mainInstancePages?.value,
               },
             ],
             images:

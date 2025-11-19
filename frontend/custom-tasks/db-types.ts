@@ -28,6 +28,7 @@ export interface Books {
   author_id: number;
   id: Generated<number | null>;
   instances: Generated<number>;
+  pages: number;
   slug: string;
   title: string;
   year: number;
@@ -38,7 +39,6 @@ export interface Goodreads {
   book_id: number | null;
   book_url: string;
   id: Generated<number | null>;
-  pages: number | null;
   ratings: number;
 }
 
