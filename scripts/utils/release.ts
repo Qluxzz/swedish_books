@@ -29,6 +29,7 @@ interface Instance {
   id: string
   bib?: string
   isbn?: string
+  pages?: string
 }
 
 export type { Release, Instance, Image }

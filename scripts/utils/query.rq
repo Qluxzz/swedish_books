@@ -6,25 +6,29 @@ PREFIX country: <https://id.kb.se/country/>
 PREFIX nat: <https://id.kb.se/nationality/>
 
 SELECT
-  ?instance ?work ?bib ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?imageYear ?imageHost ?imageBib ?imageIsbn ?genre
+  ?instance ?work ?bib ?title ?author ?givenName ?familyName ?lifeSpan ?isni ?isbn ?mainInstancePages ?otherInstancePages ?imageYear ?imageHost ?imageBib ?imageIsbn ?genre
 {
   ?instance a ?type ;
     :instanceOf ?work ;
     :hasTitle [ :mainTitle ?title ] ;
     :publication [ :year ?year ; :country country:sw ] .
+
+  # Page count from this instance
+  OPTIONAL { ?instance :extent [ a :Extent ; :label ?mainInstancePages ] }
+
+  # Page count from any instance of the same work
+  OPTIONAL { ?otherInstance :instanceOf ?work ; :extent [ a :Extent ; :label ?otherInstancePages ] }
+
   OPTIONAL { ?instance :identifiedBy [ a :ISBN ; :value ?isbn ] }
   OPTIONAL { ?instance :sameAs ?bib }
 
-  # The current instance of the work might not have the image
-  # So we check all instances of the same work and get try to get the image that way
-  # We also get the year of the instance  since we prefer the original cover
   OPTIONAL {
-    ?otherInstance 
-      :instanceOf ?work ; 
+    ?imageInstance 
+      :instanceOf ?work ;
       :image [ :publisher ?imageHost ] ;
       :publication [ :year ?imageYear ] .
-    OPTIONAL { ?otherInstance :sameAs ?imageBib }
-    OPTIONAL { ?otherInstance :identifiedBy [ a :ISBN ; :value ?imageIsbn ] }
+    OPTIONAL { ?imageInstance :sameAs ?imageBib }
+    OPTIONAL { ?imageInstance :identifiedBy [ a :ISBN ; :value ?imageIsbn ] }
   }
 
   FILTER(?type IN (:Instance, :Print))

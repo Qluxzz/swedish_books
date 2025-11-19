@@ -55,6 +55,8 @@ export interface Results {
     lifeSpan?: Value
     isni?: Value
     isbn?: Value
+    mainInstancePages?: Value
+    otherInstancePages?: Value
     imageYear?: Value
     imageHost?: Value
     imageBib?: Value
