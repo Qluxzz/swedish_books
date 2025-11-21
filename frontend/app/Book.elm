@@ -145,7 +145,7 @@ view { linkToAuthor, linkToYear, linkToTitle } book =
 
 authorNameView : { r | name : String, lifeSpan : Maybe String } -> String
 authorNameView { name, lifeSpan } =
-    [ Just name, lifeSpanView lifeSpan ] |> List.filterMap identity |> String.join " "
+    [ Just name, wrapWithParens lifeSpan ] |> List.filterMap identity |> String.join " "
 
 
 bookAuthor : Bool -> Author -> Html.Html msg

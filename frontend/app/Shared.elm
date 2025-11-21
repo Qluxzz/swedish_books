@@ -127,6 +127,9 @@ breadCrumb route =
         Route.Index ->
             Nothing
 
+        Route.Bok__Id___Slug_ _ ->
+            Nothing
+
         Route.Forfattare__Id___Namn_ _ ->
             Just <| Html.a [ Html.Attributes.href (Route.toString Route.Forfattare) ] [ Html.text "Författare" ]
 

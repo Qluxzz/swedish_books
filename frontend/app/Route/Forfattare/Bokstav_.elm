@@ -100,7 +100,7 @@ view app shared =
                         , Html.div
                             [ Html.Attributes.class "book-grid"
                             ]
-                            (List.map (Book.view { linkToAuthor = True, linkToYear = True }) a.topThreeBooks
+                            (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) a.topThreeBooks
                                 ++ (if a.totalBooks > 3 then
                                         [ Html.div
                                             [ Html.Attributes.class "show-all"
