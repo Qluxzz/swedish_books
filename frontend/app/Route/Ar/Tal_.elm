@@ -12,12 +12,17 @@ import Book
 import BookList
 import FatalError
 import Head
+import Head.Seo as Seo
 import Html
 import Json.Decode
 import Json.Encode
+import LanguageTag.Language
+import LanguageTag.Region
+import Pages.Url
 import PagesMsg
 import RouteBuilder
 import Shared
+import UrlPath
 import View
 
 
@@ -62,7 +67,20 @@ data routeParams =
 
 head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag
 head app =
-    []
+    Seo.summary
+        { canonicalUrlOverride = Nothing
+        , siteName = "https://boklåda.se/"
+        , image =
+            { url = [ "images", "icon-png.png" ] |> UrlPath.join |> Pages.Url.fromPath
+            , alt = "elm-pages logo"
+            , dimensions = Nothing
+            , mimeType = Nothing
+            }
+        , description = "Böcker för år " ++ app.routeParams.tal
+        , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
+        , title = "Böcker för år " ++ app.routeParams.tal
+        }
+        |> Seo.website
 
 
 view :

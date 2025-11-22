@@ -14,6 +14,7 @@ type alias Book =
     , slug : String
     , title : String
     , author : Author
+    , isbn : Maybe String
     , year : Int
     , imageUrl : Maybe String
     , goodreads : Maybe Goodreads
@@ -58,10 +59,11 @@ toImageUrl host id =
 decode : Json.Decode.Decoder Book
 decode =
     Json.Decode.succeed
-        (\id slug title authorId authorName authorSlug lifeSpan year avgRating ratings bookUrl imageHost imageId ->
+        (\id slug title authorId authorName authorSlug lifeSpan isbn year avgRating ratings bookUrl imageHost imageId ->
             { id = id
             , slug = slug
             , title = title
+            , isbn = isbn
             , author = { id = authorId, name = authorName, slug = authorSlug, lifeSpan = lifeSpan }
             , year = year
             , imageUrl =
@@ -81,6 +83,7 @@ decode =
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_name" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.field "author_slug" Json.Decode.string)
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "author_life_span" Json.Decode.string))
+        |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "isbn" Json.Decode.string))
         |> Serializer.Json.Extra.andMap (Json.Decode.field "year" Json.Decode.int)
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "avg_rating" Json.Decode.float))
         |> Serializer.Json.Extra.andMap (Json.Decode.maybe (Json.Decode.field "ratings" Json.Decode.int))
@@ -98,7 +101,7 @@ view { linkToAuthor, linkToYear, linkToTitle } book =
     let
         titleLink =
             if linkToTitle then
-                Html.a [ Html.Attributes.href (Route.toString (Route.Bok__Id___Slug_ { id = String.fromInt book.id, slug = book.slug })) ]
+                Html.a [ Html.Attributes.href (Route.toString (Route.Bok__Slug_ { slug = book.slug })) ]
 
             else
                 List.head >> Maybe.withDefault (Html.text "")

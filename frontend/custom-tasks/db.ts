@@ -24,6 +24,7 @@ export const bookBaseQuery = db
     "authors.life_span as author_life_span",
     "authors.slug as author_slug",
     "books.year",
+    "books.isbn",
     "goodreads.avg_rating",
     "goodreads.ratings",
     "goodreads.book_url",

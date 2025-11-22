@@ -47,6 +47,26 @@ test.describe("application", () => {
     ).toBeVisible()
   })
 
+  test("Book has expected url", async ({ page }) => {
+    await page.goto("/bok/ingenjoer-andrees-luftfaerd_per-olof-sundman")
+
+    const title = "Ingenjör Andrées luftfärd"
+    const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
+    const bookCard = findBook(title, authorAndLifeSpan, page)
+    await expect(bookCard).toBeVisible()
+
+    await expect(
+      bookCard.getByRole("heading", {
+        level: 3,
+        name: "Ingenjör Andrées luftfärd",
+      })
+    ).toBeVisible()
+    await expect(
+      bookCard.getByRole("link", { name: "Per Olof Sundman (1922-1992)" })
+    ).toBeVisible()
+    await expect(bookCard.getByRole("link", { name: "1967" })).toBeVisible()
+  })
+
   test("Book has expected details", async ({ page }) => {
     const title = "Ingenjör Andrées luftfärd"
     const authorAndLifeSpan = "Per Olof Sundman (1922-1992)"
