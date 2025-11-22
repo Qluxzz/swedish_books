@@ -6,7 +6,7 @@
     "start": "cd frontend && elm-pages dev",
     "build": "cd frontend && elm-pages build",
     "test": "vitest",
-    "e2e": "npx playwright test",
+    "test:e2e": "npx playwright test",
     "fetch": "npx tsx scripts/fetch_books.ts",
     "import": "npx tsx scripts/import.ts",
     "db:codegen": "npx kysely-codegen --dialect sqlite --url books.db --out-file frontend/custom-tasks/db-types.ts",
