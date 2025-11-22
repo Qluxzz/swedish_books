@@ -95,7 +95,7 @@ view app _ =
     { title = title app.data
     , body =
         [ Html.div [ Html.Attributes.class "book-details" ]
-            [ Book.view { linkToAuthor = False, linkToYear = False, linkToTitle = False } app.data
+            [ Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = False } app.data
             , links app.data
             ]
         ]
