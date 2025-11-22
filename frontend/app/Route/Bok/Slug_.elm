@@ -1,4 +1,4 @@
-module Route.Bok.Id_.Slug_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
+module Route.Bok.Slug_ exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
 {-|
 
@@ -8,16 +8,23 @@ module Route.Bok.Id_.Slug_ exposing (Model, Msg, RouteParams, route, Data, Actio
 
 import BackendTask
 import BackendTask.Custom
-import Book exposing (Book)
+import Book
+import Date
+import DateOrDateTime
 import FatalError
 import Head
+import Head.Seo as Seo
 import Html
 import Html.Attributes
 import Json.Decode
 import Json.Encode
+import LanguageTag.Language
+import LanguageTag.Region
+import Pages.Url
 import PagesMsg
 import RouteBuilder
 import Shared
+import Time exposing (Month(..))
 import View
 
 
@@ -30,7 +37,7 @@ type alias Msg =
 
 
 type alias RouteParams =
-    { id : String, slug : String }
+    { slug : String }
 
 
 route : RouteBuilder.StatelessRoute RouteParams Data ActionData
@@ -51,23 +58,41 @@ type alias ActionData =
 
 data : RouteParams -> BackendTask.BackendTask FatalError.FatalError Data
 data routeParams =
-    BackendTask.Custom.run "getBookById"
-        (Json.Encode.string routeParams.id)
+    BackendTask.Custom.run "getBookBySlug"
+        (Json.Encode.string routeParams.slug)
         Book.decode
         |> BackendTask.allowFatal
 
 
 head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag
 head app =
-    []
+    Seo.book
+        (Seo.summary
+            { canonicalUrlOverride = Nothing
+            , siteName = "https://boklåda.se/"
+            , image =
+                { url = Maybe.map Pages.Url.external app.data.imageUrl |> Maybe.withDefault (Pages.Url.external "")
+                , alt = "Omslag för " ++ app.data.title
+                , dimensions = Nothing
+                , mimeType = Nothing
+                }
+            , description = title app.data
+            , locale = Just ( LanguageTag.Language.sv, LanguageTag.Region.se )
+            , title = title app.data
+            }
+        )
+        { tags = []
+        , isbn = app.data.isbn
+        , releaseDate = Just <| DateOrDateTime.Date (Date.fromCalendarDate app.data.year Jan 1)
+        }
 
 
 view :
     RouteBuilder.App Data ActionData RouteParams
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg Msg)
-view app shared =
-    { title = app.data.title ++ " (" ++ String.fromInt app.data.year ++ ") av " ++ ([ Just app.data.author.name, Maybe.map (\s -> "(" ++ s ++ ")") app.data.author.lifeSpan ] |> List.filterMap identity |> String.join " ")
+view app _ =
+    { title = title app.data
     , body =
         [ Html.div [ Html.Attributes.class "book-details" ]
             [ Book.view { linkToAuthor = False, linkToYear = False, linkToTitle = False } app.data
@@ -77,16 +102,16 @@ view app shared =
     }
 
 
+title : Book.Book -> String
+title book =
+    book.title ++ " (" ++ String.fromInt book.year ++ ") av " ++ ([ Just book.author.name, Maybe.map (\s -> "(" ++ s ++ ")") book.author.lifeSpan ] |> List.filterMap identity |> String.join " ")
+
+
 pages : BackendTask.BackendTask FatalError.FatalError (List RouteParams)
 pages =
     BackendTask.Custom.run "getAllBookUrls"
         Json.Encode.null
-        (Json.Decode.list
-            (Json.Decode.map2 (\id slug -> { id = String.fromInt id, slug = slug })
-                (Json.Decode.index 0 Json.Decode.int)
-                (Json.Decode.index 1 Json.Decode.string)
-            )
-        )
+        (Json.Decode.list (Json.Decode.map (\slug -> { slug = slug }) Json.Decode.string))
         |> BackendTask.allowFatal
 
 
@@ -100,33 +125,33 @@ goodreadsUrl { bookUrl } =
 
 
 librisUrl : Book.Book -> String
-librisUrl { title, author } =
-    "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ title ++ " " ++ author.name ++ "&d=libris&f=simp&spell=true"
+librisUrl book =
+    "https://libris.kb.se/formatQuery.jsp?SEARCH_ALL=" ++ book.title ++ " " ++ book.author.name ++ "&d=libris&f=simp&spell=true"
 
 
 adlibrisUrl : Book.Book -> String
-adlibrisUrl { title, author } =
-    "https://www.adlibris.com/se/sok?q=" ++ title ++ " " ++ author.name
+adlibrisUrl book =
+    "https://www.adlibris.com/se/sok?q=" ++ book.title ++ " " ++ book.author.name
 
 
 bokusUrl : Book.Book -> String
-bokusUrl { title, author } =
-    "https://www.bokus.com/cgi-bin/product_search.cgi?ac_used=no&search_word=" ++ title ++ " " ++ author.name
+bokusUrl book =
+    "https://www.bokus.com/cgi-bin/product_search.cgi?ac_used=no&search_word=" ++ book.title ++ " " ++ book.author.name
 
 
 bokBorsenUrl : Book.Book -> String
-bokBorsenUrl { title, author } =
-    "https://www.bokborsen.se/?q=" ++ title ++ " " ++ author.name
+bokBorsenUrl book =
+    "https://www.bokborsen.se/?q=" ++ book.title ++ " " ++ book.author.name
 
 
 storygraphUrl : Book.Book -> String
-storygraphUrl { title, author } =
-    "https://app.thestorygraph.com/browse?search_term=" ++ title ++ " " ++ author.name
+storygraphUrl book =
+    "https://app.thestorygraph.com/browse?search_term=" ++ book.title ++ " " ++ book.author.name
 
 
 akademiBokhandelnUrl : Book.Book -> String
-akademiBokhandelnUrl { title, author } =
-    "https://www.akademibokhandeln.se/search?q=" ++ title ++ " " ++ author.name
+akademiBokhandelnUrl book =
+    "https://www.akademibokhandeln.se/search?q=" ++ book.title ++ " " ++ book.author.name
 
 
 links : Book.Book -> Html.Html msg
@@ -146,5 +171,5 @@ links book =
     Html.div [ Html.Attributes.class "links" ]
         [ Html.h3 [] [ Html.text "Hitta boken:" ]
         , Html.ul []
-            (List.map (\( title, url ) -> Html.li [] [ Shared.externalLink [ Html.Attributes.href url ] [ Html.text title ] ]) urls)
+            (List.map (\( t, url ) -> Html.li [] [ Shared.externalLink [ Html.Attributes.href url ] [ Html.text t ] ]) urls)
         ]

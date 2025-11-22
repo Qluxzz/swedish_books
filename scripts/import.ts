@@ -30,6 +30,7 @@ CREATE TABLE books (
   slug TEXT NOT NULL,
   author_id INTEGER NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
+  isbn TEXT NULL,
   pages INTEGER NOT NULL,
   instances INTEGER NOT NULL DEFAULT 1,
   UNIQUE (slug, author_id)
@@ -187,8 +188,8 @@ const insertAuthor = db.prepare(
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
 const insertBook = db.prepare(`
-  INSERT INTO books(title, author_id, year, pages, slug)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO books(title, author_id, year, isbn, pages, slug)
+  VALUES (?, ?, ?, ?, ?, ?)
   ON CONFLICT(author_id, slug)
   DO UPDATE SET id=id, instances=instances+1, year=MIN(excluded.year, books.year)
   RETURNING id
@@ -239,19 +240,37 @@ for (const file of files) {
     // Ignore very short works
     if (pageCount < 50) continue
 
+    // Find the first instance that has an ISBN, the first one in the list is the main instance
+    // Only about 25% of the books have an ISBN
+    const isbn = book.instances.find((x) => x.isbn)?.isbn ?? null
+
+    const authorSlug = getSlug(book.author)
+
     insertAuthor.run(
       book.authorId,
       book.author,
       book.lifeSpan ?? null,
-      getSlug(book.author)
+      authorSlug
     )
     const authorId =
       getAuthorId.get(book.authorId)?.id ??
       throwError(`Failed to get author id for ${book.author}`)
 
+    const bookSlug = getSlug(book.title)
+
     const bookId =
-      insertBook.get(book.title, authorId, year, pageCount, getSlug(book.title))
-        ?.id ?? throwError(`Failed to get book id for ${book.title}`)
+      insertBook.get(
+        book.title,
+        authorId,
+        year,
+        isbn,
+        pageCount,
+        // This is a combined slug to make it a stable id
+        // since our ids are not stable, just incremented when we add the books
+        // the id for one book might differ between generations of the database
+        // by doing this we get a stable url that can be bookmarked without any issue
+        `${bookSlug.slice(0, 150)}_${authorSlug.slice(0, 50)}`
+      )?.id ?? throwError(`Failed to get book id for ${book.title}`)
 
     // We want to get the cover of the oldest release
     const oldestToNewest = book.images.toSorted((a, b) =>

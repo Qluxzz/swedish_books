@@ -1,18 +1,18 @@
 import { bookBaseQuery, db } from "./db.ts"
-import { stringToIntWithError } from "./utils.ts"
 
-async function getBookById(id: string) {
-  const id_ = stringToIntWithError(id)
+async function getBookBySlug(slug: string) {
+  const [book_slug, author_slug] = slug.split("_")
 
   return await bookBaseQuery
-    .where("books.id", "=", id_)
+    .where("books.slug", "like", `${book_slug}%`)
+    .where("authors.slug", "like", `${author_slug}%`)
     .executeTakeFirstOrThrow()
 }
 
 async function getAllBookUrls() {
-  return (await db.selectFrom("books").select(["id", "slug"]).execute()).map(
-    (x) => [x.id, x.slug.slice(0, 150)]
+  return (await db.selectFrom("books").select("slug").execute()).map(
+    ({ slug }) => slug
   )
 }
 
-export { getBookById, getAllBookUrls }
+export { getBookBySlug, getAllBookUrls }
