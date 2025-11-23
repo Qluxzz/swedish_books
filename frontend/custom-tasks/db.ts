@@ -1,4 +1,4 @@
-import { Kysely, SqliteDialect } from "kysely"
+import { Kysely, sql, SqliteDialect } from "kysely"
 import Database from "better-sqlite3"
 import { DB } from "./db-types.ts"
 
@@ -31,3 +31,12 @@ export const bookBaseQuery = db
     "book_covers.host as image_host",
     "book_covers.image_id",
   ])
+  .orderBy((eb) => eb("book_covers.id", "is", null))
+  .orderBy(
+    (be) =>
+      be(be.ref("goodreads.avg_rating"), "*", be.ref("goodreads.ratings")),
+    "desc"
+  )
+  .orderBy(
+    sql`((${sql.ref("books.id")} * 1103515245 + 12345 + 1337) & 0x7fffffff)`
+  )
