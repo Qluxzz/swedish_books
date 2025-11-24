@@ -23,6 +23,8 @@
   --spacing-6: 1.5rem;
   --spacing-8: 2rem;
   --spacing-12: 3rem;
+
+  --container-width: 1200px;
 }
 
 body {
@@ -46,7 +48,7 @@ main {
 
 /* Container */
 .container {
-  max-width: 1200px;
+  max-width: var(--container-width);
   margin: 0 auto;
   padding: var(--spacing-4);
 
@@ -129,6 +131,24 @@ section {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+.book-scroll-container {
+  display: flex;
+  overflow: auto;
+  scroll-snap-type: x mandatory;
+  gap: var(--spacing-6);
+
+  .book-card {
+    --width: calc(((var(--container-width) - var(--spacing-4) * 2) - (3 * var(--spacing-6))) / 4);
+    scroll-snap-align: center;
+
+    max-width: var(--width);
+    width: var(--width);
+    min-width: var(--width);
+    flex-grow: 1;
+  }
+}
+
 
 /* Book Card */
 .book-card {
