@@ -115,12 +115,12 @@ view app shared =
                 ([ Html.text "Urvalet av böcker som visas på"
                  , Html.a [ Html.Attributes.href (Route.toString Route.Index) ] [ Html.text "Boklåda.se" ]
                  , Html.text "är böcker som går att låna eller läsa någonstans i Sverige just nu. Denna information kommer från"
-                 , Html.a [ Html.Attributes.href "https://libris.kb.se/" ] [ Html.text "Libris" ]
+                 , Shared.externalLink "https://libris.kb.se/" "Libris"
                  , Html.text "som är en nationell söktjänst med information om titlar på svenska bibliotek."
                  , Html.br [] []
                  , Html.br [] []
                  , Html.text "Betygen kommer från"
-                 , Html.a [ Html.Attributes.href "https://www.goodreads.com/" ] [ Html.text "Goodreads" ]
+                 , Shared.externalLink "https://www.goodreads.com/" "Goodreads"
                  , Html.text "som är en hemsida där användare kan betygsätta och recensera böcker de läst. Med hjälp av denna data så tar vi bort de mest populära författarna baserat på det summerade antalet recensioner författaren har på Goodreads. För nuvarande tar vi bort 10% av de mest populära författarna och deras böcker."
                  , Html.br [] []
                  , Html.br [] []
@@ -155,7 +155,7 @@ view app shared =
         , Html.section []
             (case app.data.mostCommonPageCountBooks of
                 _ :: _ ->
-                    [ Html.h2 [] [ Html.text <| "Dessa böcker har det vanligaste sidantalet på " ++ String.fromInt app.data.mostCommonPageCount.pageCount ++ " sidor" ]
+                    [ Html.h3 [] [ Html.text <| "Dessa böcker har alla det vanligaste sidantalet på " ++ String.fromInt app.data.mostCommonPageCount.pageCount ++ " sidor" ]
                     , BookList.scrollableView { linkToAuthor = True, linkToTitle = True, linkToYear = True } app.data.mostCommonPageCountBooks
                     ]
 
@@ -166,7 +166,7 @@ view app shared =
             []
             (case app.data.mostCommonPageCountBooks of
                 _ :: _ ->
-                    [ Html.h2 [] [ Html.text <| "Dessa böcker har median-sidantalet på " ++ String.fromInt app.data.medianPageCount ++ " sidor" ]
+                    [ Html.h3 [] [ Html.text <| "Dessa böcker har alla median-sidantalet på " ++ String.fromInt app.data.medianPageCount ++ " sidor" ]
                     , BookList.scrollableView { linkToAuthor = True, linkToTitle = True, linkToYear = True } app.data.medianPageCountBooks
                     ]
 
@@ -176,7 +176,7 @@ view app shared =
         , Html.section []
             (case app.data.mostAverageBooks of
                 _ :: _ ->
-                    [ Html.h2 [] [ Html.text <| "Dessa böcker har exakt det genomsnittliga antalet sidor på " ++ String.fromInt app.data.averagePageCount ]
+                    [ Html.h3 [] [ Html.text <| "Dessa böcker har alla exakt det genomsnittliga sidantalet på " ++ String.fromInt app.data.averagePageCount ++ " sidor" ]
                     , BookList.scrollableView { linkToAuthor = True, linkToTitle = True, linkToYear = True } app.data.mostAverageBooks
                     ]
 
