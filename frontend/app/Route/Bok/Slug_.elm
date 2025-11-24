@@ -171,5 +171,5 @@ links book =
     Html.div [ Html.Attributes.class "links" ]
         [ Html.h3 [] [ Html.text "Hitta boken:" ]
         , Html.ul []
-            (List.map (\( t, url ) -> Html.li [] [ Shared.externalLink [ Html.Attributes.href url ] [ Html.text t ] ]) urls)
+            (List.map (\( t, url ) -> Html.li [] [ Shared.externalLink url t ]) urls)
         ]

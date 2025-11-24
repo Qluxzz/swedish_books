@@ -6,16 +6,26 @@ on:
 jobs:
   build:
     name: Build static site
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: lts/*
+
+      - name: Cache ~/.elm
+        uses: actions/cache@v4
+        id: elm-cache
+        with:
+          path: ~/.elm
+          key: elm-${{ hashFiles('frontend/elm.json') }}
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build page
         run: npm run build > /dev/null
+
       - name: Clean js assets from build
         run: cd frontend && bash remove-js-assets.sh
 

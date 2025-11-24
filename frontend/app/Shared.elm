@@ -76,9 +76,9 @@ data =
 
 {-| Adds noreferrer and nofollow and opens the link in a new tab
 -}
-externalLink : List (Html.Attribute msg) -> List (Html.Html msg) -> Html.Html msg
-externalLink attributes children =
-    Html.a ([ Html.Attributes.target "_blank", Html.Attributes.rel "noreferrer nofollow" ] ++ attributes) children
+externalLink : String -> String -> Html msg
+externalLink href title =
+    Html.a [ Html.Attributes.target "_blank", Html.Attributes.rel "noreferrer nofollow", Html.Attributes.href href ] [ Html.text title ]
 
 
 view :
@@ -99,6 +99,9 @@ view _ _ _ _ pageView =
                     [ Html.text "Boklåda.se"
                     ]
                 ]
+            , Html.a [ Html.Attributes.href (Route.toString Route.Om) ]
+                [ Html.text "Om"
+                ]
             ]
         , Html.main_ []
             [ Html.div [ Html.Attributes.class "container" ]
@@ -107,13 +110,11 @@ view _ _ _ _ pageView =
         , Html.footer []
             [ Html.span []
                 [ Html.text "Skapad med hjälp av "
-                , externalLink
-                    [ Html.Attributes.href "https://elm-lang.org/" ]
-                    [ Html.text "Elm" ]
+                , externalLink "https://elm-lang.org/" "Elm"
                 , Html.text " och "
-                , externalLink [ Html.Attributes.href "https://elm-pages.com/" ] [ Html.text "elm-pages" ]
+                , externalLink "https://elm-pages.com/" "elm-pages"
                 ]
-            , externalLink [ Html.Attributes.href "https://github.com/Qluxzz/swedish_books" ] [ Html.text "Källkod" ]
+            , externalLink "https://github.com/Qluxzz/swedish_books" "Källkod"
             ]
         ]
     , title = "Boklåda.se | " ++ pageView.title

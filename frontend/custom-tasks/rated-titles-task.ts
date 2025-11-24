@@ -24,16 +24,6 @@ async function getRatedTitlesPageCount() {
 // Then sorted by rating
 // and then randomly using a fixed seed,
 // so it stays consistent between executions
-const ratedTitlesQuery = bookBaseQuery
-  .where("goodreads.ratings", ">", 0)
-  .orderBy((eb) => eb("book_covers.id", "is", null))
-  .orderBy(
-    (be) =>
-      be(be.ref("goodreads.avg_rating"), "*", be.ref("goodreads.ratings")),
-    "desc"
-  )
-  .orderBy(
-    sql`((${sql.ref("books.id")} * 1103515245 + 12345 + 1337) & 0x7fffffff)`
-  )
+const ratedTitlesQuery = bookBaseQuery.where("goodreads.ratings", ">", 0)
 
 export { getRatedTitles, getRatedTitlesPageCount, ratedTitlesQuery }

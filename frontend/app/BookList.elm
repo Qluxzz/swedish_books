@@ -1,4 +1,4 @@
-module BookList exposing (view)
+module BookList exposing (gridView, scrollableView, view)
 
 import Book
 import Html
@@ -8,20 +8,26 @@ import Section
 
 view : Book.ViewOptions -> List Book.Book -> List Book.Book -> List (Html.Html msg)
 view viewOptions ratedBooks unratedBooks =
-    let
-        bView =
-            Book.view viewOptions
-    in
     [ if List.isEmpty ratedBooks then
         Html.text ""
 
       else
         Section.ratedBooks
-            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map bView ratedBooks) ]
+            [ gridView viewOptions ratedBooks ]
     , if List.isEmpty unratedBooks then
         Html.text ""
 
       else
         Section.unratedBooks
-            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map bView unratedBooks) ]
+            [ gridView viewOptions unratedBooks ]
     ]
+
+
+gridView : Book.ViewOptions -> List Book.Book -> Html.Html msg
+gridView viewOptions books =
+    Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view viewOptions) books)
+
+
+scrollableView : Book.ViewOptions -> List Book.Book -> Html.Html msg
+scrollableView viewOptions books =
+    Html.div [ Html.Attributes.class "book-scroll-container" ] (List.map (Book.view viewOptions) books)

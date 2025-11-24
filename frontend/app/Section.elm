@@ -7,7 +7,7 @@ import Html.Attributes
 default : String -> String -> List (Html.Html msg) -> Html.Html msg
 default title description children =
     Html.section []
-        ([ Html.h2 [ Html.Attributes.class "section-title" ]
+        ([ Html.h2 []
             [ Html.text title ]
          , Html.p [ Html.Attributes.class "section-description" ] [ Html.text description ]
          ]
