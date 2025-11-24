@@ -142,11 +142,11 @@ view app shared =
                 (List.map
                     (\x ->
                         Html.div []
-                            [ Html.text <| String.fromInt x.count
+                            [ Html.span [ Html.Attributes.style "white-space" "nowrap" ] [ Html.text <| String.fromInt x.count ]
                             , Html.br [] []
-                            , Html.text <| String.fromFloat (roundTo 2 x.ofTotal) ++ "%"
+                            , Html.span [ Html.Attributes.style "white-space" "nowrap" ] [ Html.text <| String.fromFloat (roundTo 2 x.ofTotal) ++ "%" ]
                             , Html.div [ Html.Attributes.style "height" (String.fromFloat (x.ofTotal / 100.0 * 500.0) ++ "px") ] []
-                            , Html.text <| String.fromInt x.min ++ "-" ++ String.fromInt x.max
+                            , Html.span [ Html.Attributes.style "white-space" "nowrap" ] [ Html.text <| String.fromInt x.min ++ "-" ++ String.fromInt x.max ]
                             ]
                     )
                     app.data.pageCountGroups
