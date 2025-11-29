@@ -9,6 +9,7 @@ async function createPaginationResult<DB, T extends keyof DB, O>(
   page: number,
   pageSize: number
 ) {
+  // @ts-expect-error typescript can't infer the pages query correctly
   const [{ total }, data] = await Promise.all([
     query
       .clearSelect()
