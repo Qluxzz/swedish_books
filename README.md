@@ -28,7 +28,9 @@ Run `npm start` which starts the development server on [http://localhost:1234](h
 
 # Testing
 
-There is testing
+There's unit tests using vitest which can be run using `npm test`
+
+There's e2e testing using Playwright which can be tested using `npm run test:e2e`.
 
 # Information
 

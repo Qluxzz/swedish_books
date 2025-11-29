@@ -1,4 +1,4 @@
-module Book exposing (Book, Goodreads, ViewOptions, decode, toImageUrl, view, wrapWithParens)
+module Book exposing (Book, Goodreads, ViewOptions, authorNameView, decode, toImageUrl, view, wrapWithParens)
 
 import Dict
 import Head.Seo exposing (book)
@@ -144,6 +144,11 @@ view { linkToAuthor, linkToYear, linkToTitle } book =
                 ]
             ]
         ]
+
+
+authorNameView : { r | name : String, lifeSpan : Maybe String } -> String
+authorNameView { name, lifeSpan } =
+    [ Just name, wrapWithParens lifeSpan ] |> List.filterMap identity |> String.join " "
 
 
 bookAuthor : Bool -> Author -> Html.Html msg

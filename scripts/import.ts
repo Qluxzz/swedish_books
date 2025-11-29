@@ -17,7 +17,9 @@ function setupDatabaseTables(db: DatabaseSync) {
 CREATE TABLE authors (
   id INTEGER PRIMARY KEY,
   libris_id TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
+  name TEXT GENERATED ALWAYS AS (CONCAT(given_name, ' ', family_name)) STORED,
+  given_name TEXT NOT NULL,
+  family_name TEXT NOT NULL,
   slug TEXT NOT NULL,
   life_span TEXT
 );
@@ -183,7 +185,7 @@ const db = new DatabaseSync(DATABASE_FILE)
 setupDatabaseTables(db)
 
 const insertAuthor = db.prepare(
-  "INSERT OR IGNORE INTO authors (libris_id, name, life_span, slug) VALUES (?, ?, ?, ?)"
+  "INSERT OR IGNORE INTO authors (libris_id, given_name, family_name, life_span, slug) VALUES (?, ?, ?, ?, ?)"
 )
 const getAuthorId = db.prepare("SELECT id FROM authors WHERE libris_id = ?")
 
@@ -210,7 +212,8 @@ const ignoredAuthors = ["Astrid Lindgren", "Gunilla Bergström", "Åke Holmberg"
 console.time("Import time")
 db.prepare("BEGIN").run()
 for (const file of files) {
-  if (typeof file !== "string") throw new Error("Expected file to be a string!")
+  if (typeof file !== "string")
+    throw new Error(`File was not expected type! File was ${typeof file}`)
 
   if (!file.endsWith(".json")) continue
 
@@ -223,12 +226,14 @@ for (const file of files) {
   const books = JSON.parse(readFileSync(fullPath, "utf-8")) as Release[]
 
   for (const book of books) {
-    if (!book.lifeSpan) continue
+    if (!book.author.lifeSpan) continue
 
-    const { valid, alive } = authorHasValidLifeSpan(book.lifeSpan)
+    const { valid, alive } = authorHasValidLifeSpan(book.author.lifeSpan)
     if (!valid || alive) continue
 
-    if (ignoredAuthors.includes(book.author)) continue
+    const combinedName = `${book.author.givenName} ${book.author.familyName}`
+
+    if (ignoredAuthors.includes(combinedName)) continue
 
     const pageCount =
       getPageCountFromInstances(book.instances) ?? book.goodreads?.numPages
@@ -244,16 +249,17 @@ for (const file of files) {
     // Only about 25% of the books have an ISBN
     const isbn = book.instances.find((x) => x.isbn)?.isbn ?? null
 
-    const authorSlug = getSlug(book.author)
+    const authorSlug = getSlug(combinedName)
 
     insertAuthor.run(
-      book.authorId,
-      book.author,
-      book.lifeSpan ?? null,
+      book.author.id,
+      book.author.givenName,
+      book.author.familyName,
+      book.author.lifeSpan ?? null,
       authorSlug
     )
     const authorId =
-      getAuthorId.get(book.authorId)?.id ??
+      getAuthorId.get(book.author.id)?.id ??
       throwError(`Failed to get author id for ${book.author}`)
 
     const bookSlug = getSlug(book.title)

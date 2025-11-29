@@ -1,4 +1,9 @@
-import { getAuthors, getTitlesForAuthor } from "./custom-tasks/author-task.ts"
+import {
+  getAuthors,
+  getTitlesForAuthor,
+  getCountOfAuthorsByStartingFamilyNameLetter,
+  getAuthorsByLetter,
+} from "./custom-tasks/author-task.ts"
 import {
   getAvailableYears,
   getTitlesForYear,
@@ -19,7 +24,12 @@ import { getAboutInfo } from "./custom-tasks/about-task.ts"
 
 export { getAboutInfo }
 export { getAllBookUrls, getBookBySlug }
-export { getAuthors, getTitlesForAuthor }
+export {
+  getAuthors,
+  getTitlesForAuthor,
+  getCountOfAuthorsByStartingFamilyNameLetter,
+  getAuthorsByLetter,
+}
 export { getAvailableYears, getTitlesForYear }
 export { getHomePageData }
 export { getRatedTitles, getRatedTitlesPageCount }
