@@ -16,10 +16,6 @@ async function getRatedTitlesPageCount() {
   return Math.ceil(result.count / PAGE_SIZE) - 2 // The first page is the home page
 }
 
-// Sorted by titles with covers first
-// Then sorted by rating
-// and then randomly using a fixed seed,
-// so it stays consistent between executions
 const ratedTitlesQuery = bookBaseQuery.where("goodreads.ratings", ">", 0)
 
 export { getRatedTitles, getRatedTitlesPageCount, ratedTitlesQuery }
