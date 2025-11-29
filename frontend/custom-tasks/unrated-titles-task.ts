@@ -1,15 +1,11 @@
-import { sql } from "kysely"
 import { PAGE_SIZE } from "./consts.ts"
-import { bookBaseQuery, db } from "./db.ts"
+import { bookBaseQuery } from "./db.ts"
 import { createPaginationResult } from "./utils.ts"
 
 async function getUnratedTitlesPageCount() {
   const result = await unratedTitlesQuery
-    .select((f) => f.fn.countAll().as("count"))
+    .select((f) => f.fn.countAll<number>().as("count"))
     .executeTakeFirstOrThrow()
-
-  if (typeof result?.count !== "number")
-    throw new Error("Count was not a number!")
 
   return Math.ceil(result.count / PAGE_SIZE) - 2 // The first page is the home page
 }
