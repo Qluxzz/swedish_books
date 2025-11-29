@@ -76,6 +76,6 @@ test.describe("Rated books", () => {
     // so we do a hard reload to double check
     await page.reload()
 
-    expect(page.locator(".book-card").first()).toBeVisible()
+    await expect(page.locator(".book-card").first()).toBeVisible()
   })
 })
