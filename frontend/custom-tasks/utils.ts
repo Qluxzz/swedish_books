@@ -22,7 +22,7 @@ async function createPaginationResult<DB, T extends keyof DB, O>(
   ])
 
   return {
-    data: data,
+    items: data,
     pages: Math.ceil(total / pageSize),
   }
 }

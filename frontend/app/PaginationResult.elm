@@ -10,5 +10,5 @@ type alias Model x =
 decode : Json.Decode.Decoder x -> Json.Decode.Decoder (Model x)
 decode itemDecoder =
     Json.Decode.map2 Model
-        (Json.Decode.field "data" (Json.Decode.list itemDecoder))
+        (Json.Decode.field "items" (Json.Decode.list itemDecoder))
         (Json.Decode.field "pages" Json.Decode.int)
