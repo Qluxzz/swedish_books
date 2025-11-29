@@ -93,13 +93,13 @@ section {
     font-weight: bold;
     color: var(--color-foreground);
 
-    &:has(~.section-description) {
+    &:not:has(~.section-description) {
       margin-bottom: var(--spacing-8);
     }
   }
 
   .section-description {
-    margin-bottom: var(--spacing-8);
+    margin-bottom: var(--spacing-4);
     color: var(--color-muted-foreground);
     text-wrap: pretty;
   }
