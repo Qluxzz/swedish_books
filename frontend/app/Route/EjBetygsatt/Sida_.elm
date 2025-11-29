@@ -9,7 +9,6 @@ module Route.EjBetygsatt.Sida_ exposing (Model, Msg, RouteParams, route, Data, A
 import BackendTask
 import BackendTask.Custom
 import Book
-import BookList
 import FatalError
 import Head
 import Html
@@ -18,7 +17,6 @@ import Json.Decode
 import Json.Encode
 import PageSelector
 import PagesMsg
-import PaginationResult
 import Route
 import RouteBuilder
 import Shared
@@ -47,7 +45,7 @@ route =
 
 
 type alias Data =
-    PaginationResult.Model Book.Book
+    { titles : List Book.Book, pages : Int }
 
 
 type alias ActionData =
@@ -56,9 +54,15 @@ type alias ActionData =
 
 data : RouteParams -> BackendTask.BackendTask FatalError.FatalError Data
 data routeParams =
-    BackendTask.Custom.run "getUnratedTitles"
-        (Json.Encode.int (String.toInt routeParams.sida |> Maybe.withDefault 0))
-        (PaginationResult.decode Book.decode)
+    BackendTask.map2 Data
+        (BackendTask.Custom.run "getUnratedTitles"
+            (Json.Encode.int (String.toInt routeParams.sida |> Maybe.withDefault 0))
+            (Json.Decode.list Book.decode)
+        )
+        (BackendTask.Custom.run "getUnratedTitlesPageCount"
+            Json.Encode.null
+            Json.Decode.int
+        )
         |> BackendTask.allowFatal
 
 
@@ -86,7 +90,7 @@ view app shared =
         , Html.section []
             [ Html.div
                 [ Html.Attributes.class "book-grid" ]
-                (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = False }) app.data.items)
+                (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = False }) app.data.titles)
             ]
         , PageSelector.view currentPage app.data.pages (\sida -> Route.EjBetygsatt__Sida_ { sida = sida })
         ]

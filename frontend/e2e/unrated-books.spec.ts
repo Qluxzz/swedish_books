@@ -74,6 +74,10 @@ test.describe("Unrated books", () => {
     await page.goto("/ej-betygsatt/1")
     await page.locator(".page-selector").getByRole("link").last().click()
 
-    expect(await page.locator(".book-card").count()).not.toBe(0)
+    // Elm pages client side routing sometimes doesn't update correctly
+    // so we do a hard reload to double check
+    await page.reload()
+
+    await expect(page.locator(".book-card").first()).toBeVisible()
   })
 })

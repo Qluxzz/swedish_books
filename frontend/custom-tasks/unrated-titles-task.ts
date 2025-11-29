@@ -20,9 +20,6 @@ async function getUnratedTitles(page: number) {
   )
 }
 
-// Sorted by the titles with covers first,
-// and then randomly using a fixed seed,
-// so it stays consistent between executions
 const unratedTitlesQuery = bookBaseQuery.where((eb) =>
   eb.or([eb("goodreads.id", "is", null), eb("goodreads.ratings", "=", 0)])
 )
