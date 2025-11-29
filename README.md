@@ -28,7 +28,7 @@ Run `npm start` which starts the development server on [http://localhost:1234](h
 
 # Testing
 
-There is testing
+There is e2e testing using Playwright
 
 # Information
 
