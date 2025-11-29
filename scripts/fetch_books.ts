@@ -18,7 +18,7 @@ import { existsSync, mkdirSync } from "node:fs"
 // CONFIGURATION
 
 const STARTING_YEAR = 1850
-const END_YEAR = 2024
+const END_YEAR = new Date().getFullYear()
 
 const UNWANTED_GENRES = new Set([
   "https://id.kb.se/marc/Autobiography",

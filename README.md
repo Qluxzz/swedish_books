@@ -15,7 +15,7 @@ Run `npm install`
 Run `npm run fetch`
 This will:
 
-- For each year from 1850 to 2024, call the SPARQL endpoint and fetch the data available
+- For each year from 1850 to current year, call the SPARQL endpoint and fetch the data available
   - This data is cached in /cache/json-sparql
 - For each unique title that is returned, try to fetch information from Goodreads using either ISBN or title + author name
   - This data is cached in /cache/goodreads
