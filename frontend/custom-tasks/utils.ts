@@ -5,17 +5,17 @@ function throwError(message: string): never {
 }
 
 async function createPaginationResult<DB, T extends keyof DB, O>(
-  statement: SelectQueryBuilder<DB, T, O>,
+  query: SelectQueryBuilder<DB, T, O>,
   page: number,
   pageSize: number
 ) {
   const [{ total }, data] = await Promise.all([
-    statement
+    query
       .clearSelect()
       .select((x) => x.fn.countAll<number>().as("total"))
       .executeTakeFirstOrThrow(),
 
-    statement
+    query
       .limit(Math.max(0, pageSize))
       .offset(Math.max(0, page) * pageSize)
       .execute(),

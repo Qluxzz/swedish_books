@@ -4,7 +4,7 @@ import Json.Decode
 
 
 type alias Model x =
-    { data : List x, pages : Int }
+    { items : List x, pages : Int }
 
 
 decode : Json.Decode.Decoder x -> Json.Decode.Decoder (Model x)
