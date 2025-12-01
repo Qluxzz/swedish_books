@@ -46,7 +46,7 @@ export async function getHomePageData(pageSize: number) {
   }
 }
 
-const epoch = new Date(Date.UTC(2025, 11, 0)) // fixed starting week
+const epoch = new Date(Date.UTC(2025, 11, 1)) // fixed starting week
 const msPerWeek = 7 * 24 * 60 * 60 * 1000
 export function getWeekIndex(now: Date) {
   return Math.floor((now.valueOf() - epoch.valueOf()) / msPerWeek)
