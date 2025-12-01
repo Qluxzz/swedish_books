@@ -5,6 +5,7 @@
     "postinstall": "cd frontend && elm-tooling install",
     "start": "cd frontend && elm-pages dev",
     "build": "cd frontend && elm-pages build",
+    "test:ts": "vitest",
     "test:e2e": "npx playwright test",
     "test:elm": "cd frontend && elm-pages gen && npx elm-test --fuzz 10000",
     "fetch": "npx tsx scripts/fetch_books.ts",
@@ -33,6 +34,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vite": "^6.0.6",
+    "vitest": "^4.0.14",
     "wait-on": "^9.0.1"
   }
 }

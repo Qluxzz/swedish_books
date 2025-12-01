@@ -1,6 +1,7 @@
-import { Kysely, sql, SqliteDialect } from "kysely"
+import { Kysely, SqliteDialect } from "kysely"
 import Database from "better-sqlite3"
 import { DB } from "./db-types.ts"
+import { randomFixedSeed } from "./utils.ts"
 
 // Opens and reuses a single database connection for the entire application
 export const db = new Kysely<DB>({
@@ -37,6 +38,4 @@ export const bookBaseQuery = db
       be(be.ref("goodreads.avg_rating"), "*", be.ref("goodreads.ratings")),
     "desc"
   )
-  .orderBy(
-    sql`((${sql.ref("books.id")} * 1103515245 + 12345 + 1337) & 0x7fffffff)`
-  )
+  .orderBy(randomFixedSeed(10))

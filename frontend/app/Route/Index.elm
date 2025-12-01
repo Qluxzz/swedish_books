@@ -39,6 +39,7 @@ type alias RouteParams =
 type alias Data =
     { ratedBooks : List Book.Book
     , unratedBooks : List Book.Book
+    , randomTitles : List Book.Book
     , titlesPerYear : List ( Int, Int )
     }
 
@@ -59,10 +60,11 @@ route =
 data : BackendTask FatalError Data
 data =
     BackendTask.Custom.run "getHomePageData"
-        Json.Encode.null
-        (Json.Decode.map3 Data
+        (Json.Encode.int 12)
+        (Json.Decode.map4 Data
             (Json.Decode.field "ratedTitles" (Json.Decode.list Book.decode))
             (Json.Decode.field "unratedTitles" (Json.Decode.list Book.decode))
+            (Json.Decode.field "randomTitles" (Json.Decode.list Book.decode))
             (Json.Decode.field "titlesPerYear"
                 (Json.Decode.list
                     (Json.Decode.map2 Tuple.pair
@@ -108,6 +110,10 @@ view app _ =
     { title = title
     , body =
         [ Html.h2 [] [ Html.text title ]
+        , Section.default "Veckans utvalda böcker"
+            "Dessa böcker uppdateras varje måndag"
+            [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.randomTitles)
+            ]
         , Section.ratedBooks
             [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.ratedBooks)
             , Html.div [ Html.Attributes.class "see-all" ] [ Html.a [ Html.Attributes.href (Route.toString (Route.Betygsatt__Sida_ { sida = "1" })) ] [ Html.text "Se alla betygsatta böcker" ] ]
