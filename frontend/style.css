@@ -122,17 +122,32 @@ section {
   height: 24px;
 }
 
-/* Book Grid */
+
+/* Book grid starts as a scrollable list, and becomes a grid on wider screens */
 .book-grid {
-  display: grid;
-  grid-template-columns: 1fr;
   gap: var(--spacing-6);
 
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 767px) {
+    display: flex;
+    overflow: auto;
+    scroll-snap-type: x mandatory;
+
+    .book-card {
+      --width: calc(((var(--container-width) - var(--spacing-4) * 2) - (3 * var(--spacing-6))) / 4);
+      scroll-snap-align: center;
+
+      max-width: var(--width);
+      width: var(--width);
+      min-width: var(--width);
+      flex-grow: 1;
+    }
   }
 
   @media (min-width: 768px) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-6);
+
     grid-template-columns: repeat(3, 1fr);
   }
 

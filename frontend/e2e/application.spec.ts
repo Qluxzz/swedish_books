@@ -27,12 +27,20 @@ test.describe("application", () => {
   test("Has expected sections", async ({ page }) => {
     await expect(
       page.locator("section:first-of-type", {
+        has: page.getByRole("heading", {
+          level: 2,
+          name: "Veckans utvalda böcker",
+        }),
+      })
+    ).toBeVisible()
+    await expect(
+      page.locator("section:nth-of-type(2)", {
         has: page.getByRole("heading", { level: 2, name: "Betygsatta böcker" }),
       })
     ).toBeVisible()
 
     await expect(
-      page.locator("section:nth-of-type(2)", {
+      page.locator("section:nth-of-type(3)", {
         has: page.getByRole("heading", { level: 2, name: "Mysterierna" }),
       })
     ).toBeVisible()
