@@ -78,4 +78,16 @@ test.describe("Rated books", () => {
 
     await expect(page.locator(".book-card").first()).toBeVisible()
   })
+
+  test("Can click cover to see book details", async ({ page }) => {
+    await page.goto("/betygsatt/1")
+    const bookCard = page.locator(".book-card").first()
+    await expect(bookCard).toBeVisible()
+
+    const detailsLink = bookCard.getByRole("img", { name: "Omslag för" })
+    await expect(detailsLink).toBeVisible()
+    await detailsLink.click()
+
+    expect(page.url()).toContain("/bok/")
+  })
 })
