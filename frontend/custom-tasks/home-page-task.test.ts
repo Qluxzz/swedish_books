@@ -1,19 +1,22 @@
 import { test, expect } from "vitest"
 import { getWeekIndex } from "./home-page-task.ts"
 
-test("Week number hash doesn't repeat", () => {
-  const tests = [...Array(5000)].map((_, x) => new Date(2011, 0, x * 7))
+test("Week number calculation", () => {
+  // The fixed starting week is based on 2025-11-30
 
-  const result = new Map<number, Date>()
+  // All days of the same week should have the same week index
+  expect(getWeekIndex(new Date(2025, 11, 2))).toBe(0)
+  expect(getWeekIndex(new Date(2025, 11, 3))).toBe(0)
+  expect(getWeekIndex(new Date(2025, 11, 4))).toBe(0)
+  expect(getWeekIndex(new Date(2025, 11, 5))).toBe(0)
+  expect(getWeekIndex(new Date(2025, 11, 6))).toBe(0)
 
-  for (const test of tests) {
-    const res = getWeekIndex(test)
-
-    expect(
-      result.keys(),
-      `${result.get(res)} had same hash as ${test.toISOString()}`
-    ).not.toContain(res)
-
-    result.set(res, test)
+  for (let i = 0; i < 100; ++i) {
+    // The Sunday before should always be the last week index
+    expect(getWeekIndex(new Date(2025, 11, 1 + i * 7 - 1))).toBe(i - 1)
+    // Monday should be the new week index
+    expect(getWeekIndex(new Date(2025, 11, 1 + i * 7))).toBe(i)
+    // Sunday of the same week should have the same index still
+    expect(getWeekIndex(new Date(2025, 11, 1 + i * 7 + 6))).toBe(i)
   }
 })
