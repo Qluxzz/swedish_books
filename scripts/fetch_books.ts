@@ -5,7 +5,7 @@
 import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
 import {
-  GoodreadFetchError,
+  GoodreadsFetchError,
   Goodreads,
   getDataFromGoodReads,
 } from "./utils/goodreads.ts"
@@ -248,7 +248,7 @@ sparqlQueue.on(
 async function queueGetDataFromGoodreads(book: Release) {
   const data = await getDataFromGoodReads(book)
 
-  if (data === GoodreadFetchError.RateLimited) {
+  if (data === GoodreadsFetchError.RateLimited) {
     log(
       `We've been rate limited by Goodreads, waiting until all in flight requests are done, then waiting for ${GOODREADS_RATE_LIMIT_TIMEOUT}ms before resuming`
     )

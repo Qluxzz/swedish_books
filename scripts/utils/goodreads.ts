@@ -69,7 +69,7 @@ async function getByTitleAndAuthor(
   )
 }
 
-enum GoodreadFetchError {
+enum GoodreadsFetchError {
   RateLimited,
 }
 
@@ -80,7 +80,7 @@ enum GoodreadFetchError {
  */
 async function getDataFromGoodReads(
   book: Release
-): Promise<Goodreads | null | GoodreadFetchError> {
+): Promise<Goodreads | null | GoodreadsFetchError> {
   try {
     for (const instance of book.instances) {
       if (!instance.isbn) continue
@@ -94,7 +94,7 @@ async function getDataFromGoodReads(
     const err = error as Error
 
     if (err instanceof NotSuccessfulRequestError && err.status === 503)
-      return GoodreadFetchError.RateLimited
+      return GoodreadsFetchError.RateLimited
 
     log(
       `Unexpected error when fetching data for book ${book.title} ${book.author}. Error was: ${error}`
@@ -103,4 +103,4 @@ async function getDataFromGoodReads(
   }
 }
 
-export { type Goodreads, getDataFromGoodReads, GoodreadFetchError }
+export { type Goodreads, getDataFromGoodReads, GoodreadsFetchError }
