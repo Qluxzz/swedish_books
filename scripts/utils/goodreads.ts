@@ -97,7 +97,7 @@ async function getDataFromGoodReads(
       return GoodreadsFetchError.RateLimited
 
     log(
-      `Unexpected error when fetching data for book ${book.title} ${book.author}. Error was: ${error}`
+      `Unexpected error when fetching Goodreads data for book ${book.title} ${book.author}. Error was: ${error}`
     )
     return null
   }
