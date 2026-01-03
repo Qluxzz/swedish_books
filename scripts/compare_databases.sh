@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 
-# Compare two book databases to find what has changed between running import.tsx
+# Compares modified books.db to the one on the main branch
 
-if [ -z "$1" ] || [ -z "$2" ]; then
-    echo 'You need to give the path to two SQLite databases'
+if [[ -z `git status books.db --porcelain` ]]; then
+    # No changes
+    echo "books.db is not modified, run 'npm run import' and try again"
     exit 1
 fi
 
-sqlite3 :memory: "attach \"$1\" as old; attach \"$2\" as new; 
+# Get the original books.db and write it to a tmp file
+git show HEAD:books.db > /tmp/books.orig
+
+sqlite3 :memory: "attach '/tmp/books.orig' as old; attach 'books.db' as new; 
 SELECT 'Books that does not exist in both database';
 SELECT 'Old', 'New';
 SELECT (SELECT COUNT(*) FROM old.books), (SELECT COUNT(*) FROM new.books);
