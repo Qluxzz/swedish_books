@@ -1,4 +1,4 @@
-import { getFileOrDownload, log } from "./helpers.ts"
+import { getFileOrDownload, log, NotSuccessfulRequestError } from "./helpers.ts"
 import { Release } from "./release.ts"
 import getSlug from "./slug.ts"
 
@@ -69,12 +69,18 @@ async function getByTitleAndAuthor(
   )
 }
 
+enum GoodreadFetchError {
+  RateLimited,
+}
+
 /**
  * Try to fetch data from Goodreads using ISBN and a combination of title and author
  * @param book
  * @returns goodreads data for book or null
  */
-async function getDataFromGoodReads(book: Release): Promise<Goodreads | null> {
+async function getDataFromGoodReads(
+  book: Release
+): Promise<Goodreads | null | GoodreadFetchError> {
   try {
     for (const instance of book.instances) {
       if (!instance.isbn) continue
@@ -85,11 +91,16 @@ async function getDataFromGoodReads(book: Release): Promise<Goodreads | null> {
 
     return await getByTitleAndAuthor(book.title, book.author)
   } catch (error) {
+    const err = error as Error
+
+    if (err instanceof NotSuccessfulRequestError && err.status === 503)
+      return GoodreadFetchError.RateLimited
+
     log(
-      `Something went wrong when getting info for book ${book.title} ${book.author}. Error was: ${error}`
+      `Unexpected error when fetching data for book ${book.title} ${book.author}. Error was: ${error}`
     )
     return null
   }
 }
 
-export { type Goodreads, getDataFromGoodReads }
+export { type Goodreads, getDataFromGoodReads, GoodreadFetchError }

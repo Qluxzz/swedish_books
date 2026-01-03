@@ -11,15 +11,25 @@ function waitMs(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+class NotSuccessfulRequestError extends Error {
+  public status: number
+
+  constructor(resp: Response) {
+    super(
+      `Request to ${resp.url} was not successful. Returned ${resp.status} ${resp.statusText}`
+    )
+    this.status = resp.status
+  }
+}
+
 /**
  * Throws is status code is outside of 200 range
  * @param resp
+ * @throws NotSuccessfulRequestError
  */
 function ensureSuccessStatusCode(resp: Response): void | never {
   if (resp.status < 200 || resp.status >= 300)
-    throw new Error(
-      `Request to ${resp.url} was not successful. Returned ${resp.status} ${resp.statusText}`
-    )
+    throw new NotSuccessfulRequestError(resp)
 }
 
 /**
@@ -151,4 +161,5 @@ export {
   log,
   isValidISBN,
   getIdentifier,
+  NotSuccessfulRequestError,
 }

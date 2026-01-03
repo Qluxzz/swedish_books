@@ -1,10 +1,14 @@
 /**
  * Fetches books from Libris using their SPARQL endpoint
- * Tries to enhance data with data from goodreads using the ISBN or a combination of title and author
+ * Tries to enhance data with data from Goodreads using the ISBN or a combination of title and author
  */
 import crypto from "node:crypto"
 import { writeFile } from "fs/promises"
-import { Goodreads, getDataFromGoodReads } from "./utils/goodreads.ts"
+import {
+  GoodreadFetchError,
+  Goodreads,
+  getDataFromGoodReads,
+} from "./utils/goodreads.ts"
 import { getIdentifier, isValidISBN, log, throwError } from "./utils/helpers.ts"
 import PQueue from "p-queue"
 import {
@@ -62,9 +66,9 @@ function parseSparqlResult(data: SparqlResponse): Release[] {
 
         // Ignore unwanted genres
         if (
+          UNWANTED_GENRES.has(x.genre.value) ||
           x.genre.value.startsWith("https://id.kb.se/term/barn") ||
-          x.genre.value.startsWith("https://id.kb.se/term/gmgpc") ||
-          UNWANTED_GENRES.has(x.genre.value)
+          x.genre.value.startsWith("https://id.kb.se/term/gmgpc")
         ) {
           invalid.add(x.work.value)
 
@@ -207,8 +211,8 @@ const rootPath = import.meta.dirname
 const cachePath = `${rootPath}/cache`
 
 createFolderIfNotExists(cachePath)
-createFolderIfNotExists(`${cachePath}/json-sparql`)
-createFolderIfNotExists(`${cachePath}/json`)
+createFolderIfNotExists(`${cachePath}/json-sparql`) // This is the raw response from the sparql endpoint
+createFolderIfNotExists(`${cachePath}/json`) // This is our normalized data for the sparql data
 createFolderIfNotExists(`${cachePath}/goodreads`)
 
 const sparqlQueue = new PQueue({ concurrency: 15 })
@@ -223,6 +227,9 @@ sparqlQueue.addAll(
 
 const parsedTitlesPerYear: { year: number; titles: Release[] }[] = []
 
+let goodreadsRateLimitTimer: NodeJS.Timeout
+const GOODREADS_RATE_LIMIT_TIMEOUT = 30_000
+
 sparqlQueue.on(
   "completed",
   ({ year, data }: { year: number; data: SparqlResponse | null }) => {
@@ -233,18 +240,43 @@ sparqlQueue.on(
     parsedTitlesPerYear.push({ year, titles })
 
     goodReadsQueue.addAll(
-      titles.map((book) => async () => {
-        const data = await getDataFromGoodReads(book)
-        if (!data) return null
-
-        return {
-          work: book.workId,
-          goodreads: data,
-        }
-      })
+      titles.map((book) => async () => queueGetDataFromGoodreads(book))
     )
   }
 )
+
+async function queueGetDataFromGoodreads(book: Release) {
+  const data = await getDataFromGoodReads(book)
+
+  if (data === GoodreadFetchError.RateLimited) {
+    log(
+      `We've been rate limited by Goodreads, waiting until all in flight requests are done, then waiting for ${GOODREADS_RATE_LIMIT_TIMEOUT}ms before resuming`
+    )
+
+    goodReadsQueue.pause()
+
+    // Re add this book to the queue, since we failed to get the data due to being rate limited
+    goodReadsQueue.add(async () => queueGetDataFromGoodreads(book))
+
+    // Wait until we get the last rate limit error before starting the timeout
+    clearTimeout(goodreadsRateLimitTimer)
+    goodreadsRateLimitTimer = setTimeout(() => {
+      log("Starting Goodreads queue again after rate limit")
+      goodReadsQueue.start()
+    }, GOODREADS_RATE_LIMIT_TIMEOUT)
+  }
+
+  if (!data) return null
+
+  return {
+    work: book.workId,
+    goodreads: data,
+  }
+}
+
+const logRemainingGoodreadsRequests = setInterval(() => {
+  log(`${goodReadsQueue.size} Goodreads requests remaining`)
+}, 10_000)
 
 const goodreads = new Map<string, Goodreads>()
 goodReadsQueue.on(
@@ -256,8 +288,8 @@ goodReadsQueue.on(
 
 await sparqlQueue.onIdle()
 log("All sparqle requests are done!")
-log(`There are ${goodReadsQueue.size} Goodreads requests left`)
 await goodReadsQueue.onIdle()
+clearInterval(logRemainingGoodreadsRequests)
 log("All goodreads requests are done!")
 
 const fileQueue = new PQueue({ concurrency: 20 })
