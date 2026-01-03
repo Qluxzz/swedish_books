@@ -1,25 +1,25 @@
 import fetch, { Response } from "node-fetch"
 import fs from "node:fs/promises"
 
-function* chunk<T>(arr: T[], n: number) {
-  for (let i = 0; i < arr.length; i += n) {
-    yield arr.slice(i, i + n)
-  }
-}
+class NotSuccessfulRequestError extends Error {
+  public status: number
 
-function waitMs(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  constructor(resp: Response) {
+    super(
+      `Request to ${resp.url} was not successful. Returned ${resp.status} ${resp.statusText}`
+    )
+    this.status = resp.status
+  }
 }
 
 /**
  * Throws is status code is outside of 200 range
  * @param resp
+ * @throws NotSuccessfulRequestError
  */
 function ensureSuccessStatusCode(resp: Response): void | never {
   if (resp.status < 200 || resp.status >= 300)
-    throw new Error(
-      `Request to ${resp.url} was not successful. Returned ${resp.status} ${resp.statusText}`
-    )
+    throw new NotSuccessfulRequestError(resp)
 }
 
 /**
@@ -53,38 +53,6 @@ async function getFileOrDownload(
   await fs.writeFile(fileName, data)
 
   return data
-}
-
-/**
- * Retry a promise that might fail
- * @param fn function that returns a promise, if you give a promise directly, since it will already have started, it might have failed outside the try/catch and will result in an unhandled exception
- * @param attempts number of attempts
- * @param timeoutMs the delay after a failure is attempts * timeout
- * @returns the data, or throws an error if we reached the number of attempts
- */
-async function attemptWithTimeout<T>(
-  fn: () => Promise<T>,
-  attempts = 10,
-  timeoutMs = 2000
-): Promise<T> {
-  let currentAttempt = 1
-  do {
-    try {
-      return await fn()
-    } catch (error) {
-      if (currentAttempt === attempts)
-        throw new Error(
-          `Maximum number of attempts (${attempts}) was reached!`,
-          {
-            cause: error,
-          }
-        )
-
-      await waitMs(timeoutMs * currentAttempt)
-    }
-  } while (++currentAttempt <= attempts)
-
-  throw new Error("Unexpected, should have thrown error on last attempt")
 }
 
 /**
@@ -143,12 +111,11 @@ function getIdentifier(id: string): string | null {
 }
 
 export {
-  chunk,
   ensureSuccessStatusCode,
   getFileOrDownload,
-  attemptWithTimeout,
   throwError,
   log,
   isValidISBN,
   getIdentifier,
+  NotSuccessfulRequestError,
 }

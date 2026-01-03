@@ -145,9 +145,6 @@ section {
 
   @media (min-width: 768px) {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-6);
-
     grid-template-columns: repeat(3, 1fr);
   }
 
@@ -163,6 +160,7 @@ section {
   gap: var(--spacing-6);
 
   .book-card {
+    /* This is to match the width of the book size when in grid view */
     --width: calc(((var(--container-width) - var(--spacing-4) * 2) - (3 * var(--spacing-6))) / 4);
     scroll-snap-align: center;
 
