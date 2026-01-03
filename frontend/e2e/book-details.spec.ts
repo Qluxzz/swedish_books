@@ -131,7 +131,11 @@ test.describe("Book details", () => {
   test("Clicking on the book goes to book details with links to find book", async ({
     page,
   }) => {
-    const bookCard = page.locator(".book-card").first()
+    const ratedSection = page.locator("section", {
+      hasText: "Betygsatta böcker",
+    })
+
+    const bookCard = ratedSection.locator(".book-card").first()
     await expect(bookCard).toBeVisible()
 
     const detailsLink = bookCard.getByRole("img", { name: "Omslag för" })
