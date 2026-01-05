@@ -1,6 +1,8 @@
 import { sql } from "kysely"
 import { bookBaseQuery, db } from "./db.ts"
 
+const BOOKS_PER_CATEGORY = 6
+
 export async function getAboutInfo() {
   const pageCountGroups = await getBooksPerPageCount()
   const averagePageCount = await db
@@ -11,7 +13,7 @@ export async function getAboutInfo() {
 
   const mostAverageBooks = await bookBaseQuery
     .where("books.pages", "=", averagePageCount)
-    .limit(4)
+    .limit(BOOKS_PER_CATEGORY)
     .execute()
 
   const mostCommonPageCount = await db
@@ -24,7 +26,7 @@ export async function getAboutInfo() {
 
   const mostCommonPageCountBooks = await bookBaseQuery
     .where("books.pages", "=", mostCommonPageCount.pages)
-    .limit(4)
+    .limit(BOOKS_PER_CATEGORY)
     .execute()
 
   const medianPageCount = await db
@@ -43,7 +45,7 @@ export async function getAboutInfo() {
 
   const medianPageCountBooks = await bookBaseQuery
     .where("books.pages", "=", medianPageCount)
-    .limit(4)
+    .limit(BOOKS_PER_CATEGORY)
     .execute()
 
   return {
@@ -66,12 +68,6 @@ async function getBooksPerPageCount() {
       .select((fn) => fn.fn.countAll<number>().as("amount"))
       .executeTakeFirstOrThrow()
   ).amount
-
-  if (typeof totalAmountOfWorks !== "number") {
-    throw Error(
-      `Expected totalAmountOfWorks to be number, was ${typeof totalAmountOfWorks}`
-    )
-  }
 
   return (
     await db

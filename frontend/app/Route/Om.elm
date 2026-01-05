@@ -106,6 +106,7 @@ view app shared =
     , body =
         [ Html.h2 []
             [ Html.text "Om" ]
+        , Html.p [] [ Html.text "Denna sida är skapad för att lyfta fram mindre kända svenska skönlitterära originalverk. Främst för att jag själv vill läsa fler svenska originalverk, bortom klassikerna som Strindberg, Selma Lagerlöf, Astrid Lindgren, Stieg Larsson, etc. Att filtrera ut endast svenska skönlitterära originalverk är idag inte är möjligt via Libris eller Gotlibs sökfunktion, då dessa inkluderar böcker som är översatta till svenska." ]
         , Html.section
             []
             [ Html.h2 []
