@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test"
+import { test, expect } from "@playwright/test"
 
 test.describe("application", () => {
   test.beforeEach(async ({ page }) => {
@@ -13,15 +13,6 @@ test.describe("application", () => {
       maxDiffPixelRatio: 0.02,
       timeout: 30_000,
     })
-  })
-
-  test("Has expected header", async ({ page }) => {
-    await page
-      .getByRole("heading", {
-        level: 2,
-        name: "Hitta svenska skönlitterära originalverk som du kanske inte känner till",
-      })
-      .waitFor({ state: "visible" })
   })
 
   test("Has expected sections", async ({ page }) => {

@@ -79,7 +79,7 @@ data =
 
 title : String
 title =
-    "Hitta svenska skönlitterära originalverk som du kanske inte känner till"
+    "Mindre kända svenska originalverk"
 
 
 head :
@@ -109,8 +109,7 @@ view :
 view app _ =
     { title = title
     , body =
-        [ Html.h2 [] [ Html.text title ]
-        , Section.default "Veckans utvalda böcker"
+        [ Section.default "Veckans utvalda böcker"
             "Dessa böcker uppdateras varje måndag"
             [ Html.div [ Html.Attributes.class "book-grid" ] (List.map (Book.view { linkToAuthor = True, linkToYear = True, linkToTitle = True }) app.data.randomTitles)
             ]
