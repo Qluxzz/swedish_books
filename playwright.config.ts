@@ -54,5 +54,7 @@ export default defineConfig({
     command: "npm start & npx wait-on http://localhost:1234",
     url: "http://localhost:1234/",
     reuseExistingServer: !process.env.CI,
+    stdout: "pipe",
+    stderr: "pipe",
   },
 })

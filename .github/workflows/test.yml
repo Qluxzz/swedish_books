@@ -6,16 +6,9 @@ jobs:
   elm-pages-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Cache ~/.elm
-      uses: actions/cache@v4
-      id: elm-cache
-      with:
-        path: ~/.elm
-        key: elm-${{ hashFiles('frontend/elm.json') }}
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup-node
+    - uses: ./.github/actions/cache-elm
 
     - name: Install dependencies
       run: npm ci
@@ -26,16 +19,9 @@ jobs:
   ts-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Cache ~/.elm
-      uses: actions/cache@v4
-      id: elm-cache
-      with:
-        path: ~/.elm
-        key: elm-${{ hashFiles('frontend/elm.json') }}
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup-node
+    - uses: ./.github/actions/cache-elm
 
     - name: Install dependencies
       run: npm ci
@@ -46,16 +32,9 @@ jobs:
   elm-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Cache ~/.elm
-      uses: actions/cache@v4
-      id: elm-cache
-      with:
-        path: ~/.elm
-        key: elm-${{ hashFiles('frontend/elm.json') }}
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup-node
+    - uses: ./.github/actions/cache-elm
 
     - name: Install dependencies
       run: npm ci
@@ -66,10 +45,8 @@ jobs:
   database-types-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup-node
     - name: Install dependencies
       run: npm ci
     - name: Build
@@ -78,10 +55,8 @@ jobs:
   type-check-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup-node
     - name: Install dependencies
       run: npm ci
     - name: Build
@@ -91,17 +66,16 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/setup-node
+
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
       run: npm run test:e2e
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: ${{ !cancelled() }}
       with:
         name: playwright-report
