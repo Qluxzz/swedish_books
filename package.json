@@ -27,7 +27,7 @@
     "elm-optimize-level-2": "^0.4.0",
     "elm-pages": "3.5.1",
     "elm-review": "^2.13.5",
-    "elm-test": "^0.19.2-0",
+    "elm-test": "0.19.1-revision17",
     "elm-tooling": "^1.18.0",
     "kysely": "^0.29.3",
     "kysely-codegen": "^0.20.0",
