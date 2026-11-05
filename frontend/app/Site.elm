@@ -10,7 +10,7 @@ import SiteConfig exposing (SiteConfig)
 
 config : SiteConfig
 config =
-    { canonicalUrl = "https://boklåda.se"
+    { canonicalUrl = "https://qluxzz.github.io/swedish_books"
     , head = head
     }
 

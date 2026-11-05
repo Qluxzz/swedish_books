@@ -69,7 +69,7 @@ head app =
     Seo.book
         (Seo.summary
             { canonicalUrlOverride = Nothing
-            , siteName = "https://boklåda.se/"
+            , siteName = "https://qluxzz.github.io/swedish_books/"
             , image =
                 { url = Maybe.map Pages.Url.external app.data.imageUrl |> Maybe.withDefault (Pages.Url.external "")
                 , alt = "Omslag för " ++ app.data.title
