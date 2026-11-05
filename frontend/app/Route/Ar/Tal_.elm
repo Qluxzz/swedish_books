@@ -69,7 +69,7 @@ head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag
 head app =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "https://boklåda.se/"
+        , siteName = "https://qluxzz.github.io/swedish_books/"
         , image =
             { url = [ "images", "icon-png.png" ] |> UrlPath.join |> Pages.Url.fromPath
             , alt = "elm-pages logo"
